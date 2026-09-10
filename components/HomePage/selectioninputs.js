@@ -33,8 +33,10 @@ export default function SelectionInputs({
     justifyContent: toCity ? "flex-start" : "center",
   };
 
+  // UC-01 - POST-1
   const handleSearch = () => {
     console.log(selectedCityFrom, selectedCityTo, selectedDates, adultsCount);
+    // UC -01 - POST-4
     if (
       !selectedCityFrom ||
       !selectedCityTo ||
@@ -55,6 +57,7 @@ export default function SelectionInputs({
     localStorage.setItem("searchParams", JSON.stringify(searchParams));
     router.push("/flights");
   };
+  
   useEffect(() => {
     async function fetchCities() {
       try {

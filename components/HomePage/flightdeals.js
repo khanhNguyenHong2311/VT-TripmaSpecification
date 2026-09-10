@@ -1,3 +1,4 @@
+import { useState, useEffect } from "react";
 import PlaceCard from "./placecard";
 import styles from "./flightdeals.module.css";
 import Image from "next/image";
@@ -9,7 +10,7 @@ function NamePriceComponent({ placename, city, price }) {
         <h4 className={styles.country}>{`${placename}, `}</h4>
         <h4 className={styles.city}>{city}</h4>
       </div>
-      {price && <h4 className={styles.price}>{price}</h4>}
+      {price && <h4 className={styles.price}>${price}</h4>}
     </div>
   );
 }
@@ -36,17 +37,40 @@ export default function FlightDeals({
   type,
   imgpath,
 }) {
-  const renderedelement =
-    type === "FLIGHTS" ? (
-      <NamePriceComponent placename="The Bund" city="Shanghai" price="$598" />
-    ) : type === "HOTEL" ? (
-      <HotelComponent text={"Hotel Kaneyamaen and Bessho SASA"} />
-    ) : (
-      <TextComponent
-        normaltext="Stay among the atolls in"
-        specialtext="Maldives"
-      />
-    );
+  const [data, setData] = useState([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    async function fetchData() {
+      try {
+        setLoading(true);
+        const endpoint = type === "FLIGHTS" ? "/api/flight-deals" : "/api/unique-places";
+        const res = await fetch(endpoint);
+        if (res.ok) {
+          const json = await res.json();
+          setData(json);
+        }
+      } catch (error) {
+        console.error("Error fetching deals", error);
+      } finally {
+        setLoading(false);
+      }
+    }
+    fetchData();
+  }, [type]);
+
+  const renderInnerElement = (item) => {
+    if (type === "FLIGHTS") {
+      return <NamePriceComponent placename={item.placeName} city={item.city} price={item.price} />;
+    } else if (type === "HOTEL") {
+      return <HotelComponent text={item.placeName} />;
+    } else {
+      return <TextComponent normaltext={item.description} specialtext={item.placeName} />;
+    }
+  };
+
+  const topItems = data.slice(0, 3);
+  const fullItem = data.length > 3 ? data[3] : null;
 
   return (
     <div className={styles.outercontainer}>
@@ -63,41 +87,34 @@ export default function FlightDeals({
         </div>
       </div>
       <div className={styles.container}>
-        <div className={styles.combinedcontainer}>
-          <PlaceCard
-            imageSrc={imgpath}
-            description="China's most international city"
-            width={410.67}
-            height={397}
-          >
-            {renderedelement}
-          </PlaceCard>
-          <PlaceCard
-            imageSrc={imgpath}
-            description="China's most international city"
-            width={410.67}
-            height={397}
-          >
-            {renderedelement}
-          </PlaceCard>
-          <PlaceCard
-            imageSrc={imgpath}
-            description="China's most international city"
-            width={410.67}
-            height={397}
-          >
-            {renderedelement}
-          </PlaceCard>
-        </div>
-        {showfull && (
-          <PlaceCard
-            imageSrc="./flightdealfull.svg"
-            description="China's most international city"
-            width={1312}
-            height={397}
-          >
-            {renderedelement}
-          </PlaceCard>
+        {loading ? (
+          <p>Loading...</p>
+        ) : (
+          <>
+            <div className={styles.combinedcontainer}>
+              {topItems.map((item) => (
+                <PlaceCard
+                  key={item.id}
+                  imageSrc={item.imgPath || imgpath}
+                  description={item.description}
+                  width={410.67}
+                  height={397}
+                >
+                  {renderInnerElement(item)}
+                </PlaceCard>
+              ))}
+            </div>
+            {showfull && fullItem && (
+              <PlaceCard
+                imageSrc="./flightdealfull.svg"
+                description={fullItem.description}
+                width={1312}
+                height={397}
+              >
+                {renderInnerElement(fullItem)}
+              </PlaceCard>
+            )}
+          </>
         )}
       </div>
     </div>

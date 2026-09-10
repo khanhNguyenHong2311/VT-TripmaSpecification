@@ -14,7 +14,8 @@ export async function GET(request) {
     const adults = parseInt(searchParams.get("adults") || "0");
     const minors = parseInt(searchParams.get("minors") || "0");
     const type = searchParams.get("type") === "true";
-
+    
+    // BR-SEARCH-001: Total passengers = adults + minors
     const totalPassengers = adults + minors;
     const dateObj = new Date(date);
     const endDateObj = endDate ? new Date(endDate) : null;

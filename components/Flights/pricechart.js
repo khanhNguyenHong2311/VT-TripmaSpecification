@@ -1,22 +1,13 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import ReactApexChart from "react-apexcharts";
 import styles from "./pricechart.module.css";
-const prices = [30, 20, 50, 40, 70, 60];
-const dates = [
-  "2021-01-01",
-  "2021-02-01",
-  "2021-03-01",
-  "2021-04-01",
-  "2021-05-01",
-  "2021-06-01",
-];
 
-const ApexChart = () => {
-  const [chartData] = useState({
+const ApexChart = ({ fromCity, toCity }) => {
+  const [chartData, setChartData] = useState({
     series: [
       {
-        name: "STOCK ABC",
-        data: prices,
+        name: "Price",
+        data: [],
       },
     ],
     options: {
@@ -33,8 +24,7 @@ const ApexChart = () => {
       stroke: {
         curve: "straight",
       },
-
-      labels: dates,
+      labels: [],
       xaxis: {
         type: "datetime",
         labels: {
@@ -61,23 +51,48 @@ const ApexChart = () => {
           opacityTo: 0.9,
           stops: [0, 32.81, 100],
           colorStops: [
-            {
-              offset: 0,
-              color: "#D2D1FA",
-            },
-            {
-              offset: 32.81,
-              color: "#C3C2F8",
-            },
-            {
-              offset: 100,
-              color: "#A5A4F4",
-            },
+            { offset: 0, color: "#D2D1FA" },
+            { offset: 32.81, color: "#C3C2F8" },
+            { offset: 100, color: "#A5A4F4" },
           ],
         },
       },
     },
   });
+
+  const [isLoading, setIsLoading] = useState(true);
+
+  useEffect(() => {
+    if (!fromCity || !toCity) return;
+
+    const fetchHistory = async () => {
+      try {
+        setIsLoading(true);
+        const res = await fetch(`/api/price-history?fromCity=${encodeURIComponent(fromCity)}&toCity=${encodeURIComponent(toCity)}`);
+        const data = await res.json();
+        
+        if (!res.ok) throw new Error(data.error);
+
+        const prices = data.map(item => item.price);
+        const dates = data.map(item => item.date);
+
+        setChartData(prev => ({
+          ...prev,
+          series: [{ name: "Price", data: prices }],
+          options: {
+            ...prev.options,
+            labels: dates
+          }
+        }));
+      } catch (err) {
+        console.error("Failed to fetch price history", err);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    fetchHistory();
+  }, [fromCity, toCity]);
 
   return (
     <div className={styles.container}>
@@ -86,12 +101,15 @@ const ApexChart = () => {
       </div>
       <div className={styles.chartcontainer}>
         <div id="chart">
-          <ReactApexChart
-            options={chartData.options}
-            series={chartData.series}
-            type="area"
-            height={200}
-          />
+          {!isLoading && (
+            <ReactApexChart
+              options={chartData.options}
+              series={chartData.series}
+              type="area"
+              height={200}
+            />
+          )}
+          {isLoading && <p>Loading chart...</p>}
         </div>
       </div>
     </div>

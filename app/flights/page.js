@@ -41,6 +41,7 @@ export default function FlightsPage() {
   }, []);
 
   useEffect(() => {
+    // UC-01 - POST-2, 3
     const fetchFlights = async () => {
       if (!searchParams) {
         setIsLoading(false);
@@ -144,6 +145,7 @@ export default function FlightsPage() {
         departingFlights={departingFlights}
         arrivingFlights={arrivingFlights}
         type={searchParams.type}
+        searchParams={searchParams}
       />
       <FlightDeals
         showfull={false}

@@ -1,6 +1,7 @@
 import prisma from "@/lib/prisma";
 import { NextResponse } from "next/server";
 
+// UC-01 PRE-2
 async function getAvailableCities() {
   const flights = await prisma.flight.findMany({
     select: {

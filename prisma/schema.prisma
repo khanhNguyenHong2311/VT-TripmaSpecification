@@ -84,6 +84,7 @@ model User {
   accounts      Account[]
   Bookings      Booking[]
   Comments      CommentSection[]
+  SavedPaymentMethods SavedPaymentMethod[]
 }
 
 model Booking {
@@ -91,8 +92,6 @@ model Booking {
   userId              String?  @db.Uuid
   departingFlightId   String   @db.Uuid
   returningFlightId   String?  @db.Uuid // Optional, can be null if not applicable
-  departingSeat       String
-  arrivingSeat        String? // Optional, can be null if not applicable
   baggageFees         Float
   upgradeFees         Float
   total               Float
@@ -118,20 +117,33 @@ model PassengerInfo {
   phone               String
   redressNumber       String?
   knownTravelerNumber String?
+  checkedBags         Int      @default(0)
+  emergencyFirstName  String?
+  emergencyLastName   String?
+  emergencyEmail      String?
+  emergencyPhone      String?
+  
+  departingSeat       String
+  arrivingSeat        String?
+
   bookingId           String   @db.Uuid
 
   Booking Booking @relation(fields: [bookingId], references: [id])
 }
 
 model PaymentInfo {
-  id          String   @id @default(uuid()) @db.Uuid
-  paymentType String
-  bookingId   String   @db.Uuid
-  nameOnCard  String
-  cardNumber  String
-  ccv         String
-  date        DateTime
-  expireDate  DateTime
+  id             String   @id @default(uuid()) @db.Uuid
+  paymentType    String
+  bookingId      String   @db.Uuid
+  nameOnCard     String?
+  cardNumber     String?
+  ccv            String?
+  date           DateTime @default(now())
+  expireDate     DateTime?
+  
+  billingAddress String?
+  transactionId  String?
+  providerEmail  String?
 
   Booking Booking @relation(fields: [bookingId], references: [id])
 
@@ -163,4 +175,30 @@ model Account {
   user               User      @relation(fields: [userId], references: [id])
 
   @@unique([provider, providerAccountId])
+}
+
+model RoutePriceHistory {
+  id        String   @id @default(uuid()) @db.Uuid
+  fromCity  String
+  toCity    String
+  date      DateTime
+  price     Float
+  createdAt DateTime @default(now())
+
+  @@index([fromCity, toCity, date])
+}
+
+
+model SavedPaymentMethod {
+  id              String   @id @default(uuid()) @db.Uuid
+  userId          String   @db.Uuid
+  paymentType     String
+  nameOnCard      String?
+  last4Digits     String?
+  expireDate      DateTime?
+  paymentToken    String?
+  billingAddress  String?
+  createdAt       DateTime @default(now())
+
+  User            User     @relation(fields: [userId], references: [id])
 }

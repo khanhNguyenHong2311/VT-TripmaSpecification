@@ -15,8 +15,14 @@ export default function FlightReservation({
   arrivingFlights,
   departingFlights,
   type,
+  searchParams,
 }) {
   console.log(selectedFlights);
+  
+  const fromCity = searchParams?.fromCity;
+  const toCity = searchParams?.toCity;
+  const startDate = searchParams?.startDate;
+
   return (
     <div className={styles.flightpricesinfo}>
       <div className={styles.flightsinfo}>
@@ -34,8 +40,8 @@ export default function FlightReservation({
       <div className={styles.pricesinfo}>
         {selectedFlights.length === 0 ? (
           <>
-            <PriceGrid />
-            <PriceChart />
+            <PriceGrid fromCity={fromCity} toCity={toCity} startDate={startDate} />
+            <PriceChart fromCity={fromCity} toCity={toCity} />
             <PriceRating />
           </>
         ) : (

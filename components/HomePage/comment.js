@@ -1,28 +1,31 @@
 import Image from "next/image";
 import styles from "./comment.module.css";
 import { FaStar } from "react-icons/fa";
-export default function CommentCard({ user }) {
-  let firstName, lastName, image, place, date, rating, comment;
-  firstName = "Yifei";
-  lastName = "Chen";
-  image = "./commenter.svg";
-  place = "Seoul, South Korea | April 2019";
-  rating = 4;
-  comment =
-    "What a great experience using Tripma! I booked all of my flights for my gap year through Tripma and never had any issues. When I had to cancel a flight because of an emergency, Tripma support helped me";
+export default function CommentCard({ data }) {
+  if (!data) return null;
+
+  const { rate: rating, description: comment, date, User } = data;
+  const name = User?.name || "Unknown User";
+  const image = User?.image || "./commenter.svg";
+  
+  // Format date to something like "April 2023"
+  const dateObj = new Date(date);
+  const formattedDate = dateObj.toLocaleString('en-US', { month: 'long', year: 'numeric' });
+  const place = `Joined | ${formattedDate}`;
+
   return (
     <div className={styles.commentContainer}>
       <div className={styles.imageContainer}>
         <Image
           src={image}
-          alt={`${firstName} ${lastName}`}
+          alt={name}
           width={48}
           height={48}
         />
       </div>
       <div className={styles.textSection}>
         <div className={styles.userData}>
-          <span className={styles.name}>{`${firstName} ${lastName}`}</span>
+          <span className={styles.name}>{name}</span>
           <span className={styles.place}>{place}</span>
           <div className={styles.userRating}>
             {[...Array(5)].map((star, index) => (
