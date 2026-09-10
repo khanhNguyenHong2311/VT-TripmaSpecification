@@ -1,6 +1,6 @@
 ---
 artifact_type: api-contract
-status: Frozen
+status: Draft
 api_id: API-FLIGHTS-SEARCH
 related_uc_id: UC-01
 ---
@@ -31,7 +31,7 @@ GET
 
 ### Description
 
-Search for flights based on departure city, arrival city, dates, and passenger count. Returns departing and returning flights (if round-trip).
+Provides Tripma flight-search data for a submitted travel-search request.
 
 ### Authentication
 
@@ -41,6 +41,10 @@ Public
 
 None
 
+### Example Isolation
+
+Each example below is an independent Tripma field sample. Examples from different fields must not be combined to infer business behavior; applicable behavior is defined only by UC-01's UML Model and Business Rules.
+
 ## Request Header(s)
 
 ### headers.Accept
@@ -48,53 +52,53 @@ None
 Type: string; Format: MIME type; Required: No; Nullable: No
 Default: application/json
 Allowed values: application/json
-Trigger: Every request.
-Description: Declares the expected response format.
+Trigger: API-FLIGHTS-SEARCH request.
+Description: Response media type requested by the Tripma client.
 Example: application/json
 
 ## Query Parameter(s)
 
 ### query.fromCity
 Type: string; Required: Yes; Nullable: No
-Trigger: Flight search request.
-Description: Departure city name.
-Example: """"New York""""
+Trigger: Tripma flight-search submission.
+Description: Tripma origin-city input.
+Example: "Ho Chi Minh City"
 
 ### query.toCity
 Type: string; Required: Yes; Nullable: No
-Trigger: Flight search request.
-Description: Arrival city name.
-Example: ""London""
+Trigger: Tripma flight-search submission.
+Description: Tripma destination-city input.
+Example: "Singapore"
 
 ### query.startDate
 Type: string; Format: date; Required: Yes; Nullable: No
-Trigger: Flight search request.
-Description: Departure date.
-Example: ""2024-08-15""
+Trigger: Tripma flight-search submission.
+Description: Tripma departure-date input.
+Example: "2027-02-15"
 
 ### query.endDate
-Type: string; Format: date; Required: Conditionally (Yes if type=true); Nullable: Yes
-Trigger: Flight search request for round-trip.
-Description: Return date.
-Example: ""2024-08-20""
+Type: string; Format: date; Required: No; Nullable: No
+Trigger: Tripma flight-search submission when the field is supplied.
+Description: Tripma return-date input.
+Example: "2027-02-20"
 
 ### query.type
 Type: boolean; Required: Yes; Nullable: No
-Trigger: Flight search request.
-Description: Trip type (true for round-trip, false for one-way).
+Trigger: Tripma flight-search submission.
+Description: Tripma trip-mode input.
 Example: true
 
 ### query.adults
 Type: integer; Required: Yes; Nullable: No
-Trigger: Flight search request.
-Description: Number of adult passengers.
-Example: 2
+Trigger: Tripma flight-search submission.
+Description: Adult-traveller count input.
+Example: 1
 
 ### query.minors
 Type: integer; Required: Yes; Nullable: No
-Trigger: Flight search request.
-Description: Number of minor passengers.
-Example: 0
+Trigger: Tripma flight-search submission.
+Description: Minor-traveller count input.
+Example: 1
 
 ## Request Body
 
@@ -102,301 +106,325 @@ None
 
 ## Success Response — HTTP 200
 
+### currency
+Type: string; Format: ISO 4217 currency code
+Required: Yes
+Nullable: No
+Trigger: API-FLIGHTS-SEARCH success response.
+Description: Tripma response currency code.
+Example: "VND"
+
 ### departingFlights
 Type: array
 Required: Yes
 Nullable: No
-Trigger: Successful search.
-Description: Array of departing flights matching criteria.
+Trigger: API-FLIGHTS-SEARCH success response.
+Description: Tripma outbound-flight collection.
 Example: []
 
 ### departingFlights[].flightId
-Type: string
+Type: string; Format: UUID
 Required: Yes
 Nullable: No
-Trigger: Successful search.
-Description: Flight identifier.
-Example: ""uuid"
+Trigger: Outbound-flight item returned by API-FLIGHTS-SEARCH.
+Description: Tripma flight identifier.
+Example: "7a2bc3ca-6edd-4b15-ae4a-7d5078abdb5f"
 
 ### departingFlights[].fromCity
 Type: string
 Required: Yes
 Nullable: No
-Trigger: Successful search.
-Description: Departure city name.
-Example: ""New York""
+Trigger: Outbound-flight item returned by API-FLIGHTS-SEARCH.
+Description: Origin city of the flight item.
+Example: "Hanoi"
 
 ### departingFlights[].toCity
 Type: string
 Required: Yes
 Nullable: No
-Trigger: Successful search.
-Description: Arrival city name.
-Example: ""London""
+Trigger: Outbound-flight item returned by API-FLIGHTS-SEARCH.
+Description: Destination city of the flight item.
+Example: "Da Nang"
 
 ### departingFlights[].type
 Type: boolean
 Required: Yes
 Nullable: No
-Trigger: Successful search.
-Description: Flight type (true for round-trip).
+Trigger: Outbound-flight item returned by API-FLIGHTS-SEARCH.
+Description: Tripma trip-mode value carried by the flight item.
 Example: true
 
 ### departingFlights[].imgPath
 Type: string
 Required: Yes
 Nullable: No
-Trigger: Successful search.
-Description: Path to flight image.
-Example: ""/path/to/image""
+Trigger: Outbound-flight item returned by API-FLIGHTS-SEARCH.
+Description: Tripma image reference for the flight item.
+Example: "/images/flights/vietnam-airlines.png"
 
 ### departingFlights[].subtotalPrice
 Type: number
 Required: Yes
 Nullable: No
-Trigger: Successful search.
-Description: Base price of the flight.
-Example: 500
+Trigger: Outbound-flight item returned by API-FLIGHTS-SEARCH.
+Description: Subtotal fare carried by the flight item.
+Example: 2450000
 
 ### departingFlights[].taxesAndFees
 Type: number
 Required: Yes
 Nullable: No
-Trigger: Successful search.
-Description: Taxes and fees amount.
-Example: 50
+Trigger: Outbound-flight item returned by API-FLIGHTS-SEARCH.
+Description: Taxes-and-fees amount carried by the flight item.
+Example: 320000
 
 ### departingFlights[].airlineName
 Type: string
 Required: Yes
 Nullable: No
-Trigger: Successful search.
-Description: Name of the airline.
-Example: ""Airline Name""
+Trigger: Outbound-flight item returned by API-FLIGHTS-SEARCH.
+Description: Airline display name for the flight item.
+Example: "Vietnam Airlines"
 
 ### departingFlights[].duration
 Type: string
 Required: Yes
 Nullable: No
-Trigger: Successful search.
-Description: Flight duration.
-Example: ""7h 30m""
+Trigger: Outbound-flight item returned by API-FLIGHTS-SEARCH.
+Description: Display duration for the flight item.
+Example: "1h 25m"
 
 ### departingFlights[].fromToTime
 Type: string
 Required: Yes
 Nullable: No
-Trigger: Successful search.
-Description: Departure and arrival time.
-Example: ""10:00 - 17:30""
+Trigger: Outbound-flight item returned by API-FLIGHTS-SEARCH.
+Description: Display time range for the flight item.
+Example: "08:30 - 09:55"
 
 ### departingFlights[].date
 Type: string; Format: ISO 8601
 Required: Yes
 Nullable: No
-Trigger: Successful search.
-Description: Flight date and time.
-Example: ""2024-08-15T10:00:00Z""
+Trigger: Outbound-flight item returned by API-FLIGHTS-SEARCH.
+Description: Scheduled date-time carried by the flight item.
+Example: "2027-05-09T08:30:00+07:00"
+
+### departingFlights[].arrivalAt
+Type: string; Format: ISO 8601
+Required: Yes
+Nullable: No
+Trigger: Outbound-flight item returned by API-FLIGHTS-SEARCH.
+Description: Scheduled arrival date-time carried by the flight item.
+Example: "2027-05-09T09:55:00+07:00"
 
 ### departingFlights[].availableSeats
-Type: number
+Type: integer
 Required: Yes
 Nullable: No
-Trigger: Successful search.
-Description: Number of available seats.
-Example: 150
+Trigger: Outbound-flight item returned by API-FLIGHTS-SEARCH.
+Description: Seat-availability value carried by the flight item.
+Example: 24
 
 ### departingFlights[].stopsNumber
-Type: number
+Type: integer
 Required: Yes
 Nullable: No
-Trigger: Successful search.
-Description: Number of stops.
+Trigger: Outbound-flight item returned by API-FLIGHTS-SEARCH.
+Description: Stop-count value carried by the flight item.
 Example: 0
 
 ### departingFlights[].stopsInfo
 Type: string
 Required: Yes
-Nullable: No
-Trigger: Successful search.
-Description: Stop information.
-Example: ""Direct""
+Nullable: Yes
+Trigger: Outbound-flight item returned by API-FLIGHTS-SEARCH.
+Description: Stop-information display value for the flight item.
+Example: "Non-stop"
 
 ### arrivingFlights
 Type: array
 Required: Yes
 Nullable: No
-Trigger: Successful search with round-trip.
-Description: Array of returning flights matching criteria (empty if one-way).
+Trigger: API-FLIGHTS-SEARCH success response.
+Description: Tripma inbound-flight collection.
 Example: []
 
 ### arrivingFlights[].flightId
-Type: string
+Type: string; Format: UUID
 Required: Yes
 Nullable: No
-Trigger: Successful search with round-trip.
-Description: Flight identifier.
-Example: ""uuid""
+Trigger: Inbound-flight item returned by API-FLIGHTS-SEARCH.
+Description: Tripma flight identifier.
+Example: "c47b6056-87b9-4437-9e64-4468f13d9cf8"
 
 ### arrivingFlights[].fromCity
 Type: string
 Required: Yes
 Nullable: No
-Trigger: Successful search with round-trip.
-Description: Departure city name.
-Example: ""London""
+Trigger: Inbound-flight item returned by API-FLIGHTS-SEARCH.
+Description: Origin city of the flight item.
+Example: "Hue"
 
 ### arrivingFlights[].toCity
 Type: string
 Required: Yes
 Nullable: No
-Trigger: Successful search with round-trip.
-Description: Arrival city name.
-Example: ""New York""
+Trigger: Inbound-flight item returned by API-FLIGHTS-SEARCH.
+Description: Destination city of the flight item.
+Example: "Nha Trang"
 
 ### arrivingFlights[].type
 Type: boolean
 Required: Yes
 Nullable: No
-Trigger: Successful search with round-trip.
-Description: Flight type (true for round-trip).
+Trigger: Inbound-flight item returned by API-FLIGHTS-SEARCH.
+Description: Tripma trip-mode value carried by the flight item.
 Example: true
 
 ### arrivingFlights[].imgPath
 Type: string
 Required: Yes
 Nullable: No
-Trigger: Successful search with round-trip.
-Description: Path to flight image.
-Example: ""/path/to/image""
+Trigger: Inbound-flight item returned by API-FLIGHTS-SEARCH.
+Description: Tripma image reference for the flight item.
+Example: "/images/flights/vietnam-airlines.png"
 
 ### arrivingFlights[].subtotalPrice
 Type: number
 Required: Yes
 Nullable: No
-Trigger: Successful search with round-trip.
-Description: Base price of the flight.
-Example: 500
+Trigger: Inbound-flight item returned by API-FLIGHTS-SEARCH.
+Description: Subtotal fare carried by the flight item.
+Example: 2310000
 
 ### arrivingFlights[].taxesAndFees
 Type: number
 Required: Yes
 Nullable: No
-Trigger: Successful search with round-trip.
-Description: Taxes and fees amount.
-Example: 50
+Trigger: Inbound-flight item returned by API-FLIGHTS-SEARCH.
+Description: Taxes-and-fees amount carried by the flight item.
+Example: 305000
 
 ### arrivingFlights[].airlineName
 Type: string
 Required: Yes
 Nullable: No
-Trigger: Successful search with round-trip.
-Description: Name of the airline.
-Example: ""Airline Name""
+Trigger: Inbound-flight item returned by API-FLIGHTS-SEARCH.
+Description: Airline display name for the flight item.
+Example: "Vietnam Airlines"
 
 ### arrivingFlights[].duration
 Type: string
 Required: Yes
 Nullable: No
-Trigger: Successful search with round-trip.
-Description: Flight duration.
-Example: ""7h 30m""
+Trigger: Inbound-flight item returned by API-FLIGHTS-SEARCH.
+Description: Display duration for the flight item.
+Example: "1h 25m"
 
 ### arrivingFlights[].fromToTime
 Type: string
 Required: Yes
 Nullable: No
-Trigger: Successful search with round-trip.
-Description: Departure and arrival time.
-Example: ""10:00 - 17:30""
+Trigger: Inbound-flight item returned by API-FLIGHTS-SEARCH.
+Description: Display time range for the flight item.
+Example: "18:10 - 19:35"
 
 ### arrivingFlights[].date
 Type: string; Format: ISO 8601
 Required: Yes
 Nullable: No
-Trigger: Successful search with round-trip.
-Description: Flight date and time.
-Example: ""2024-08-20T10:00:00Z""
+Trigger: Inbound-flight item returned by API-FLIGHTS-SEARCH.
+Description: Scheduled date-time carried by the flight item.
+Example: "2027-06-12T18:10:00+07:00"
+
+### arrivingFlights[].arrivalAt
+Type: string; Format: ISO 8601
+Required: Yes
+Nullable: No
+Trigger: Inbound-flight item returned by API-FLIGHTS-SEARCH.
+Description: Scheduled arrival date-time carried by the flight item.
+Example: "2027-06-12T19:35:00+07:00"
 
 ### arrivingFlights[].availableSeats
-Type: number
+Type: integer
 Required: Yes
 Nullable: No
-Trigger: Successful search with round-trip.
-Description: Number of available seats.
-Example: 150
+Trigger: Inbound-flight item returned by API-FLIGHTS-SEARCH.
+Description: Seat-availability value carried by the flight item.
+Example: 18
 
 ### arrivingFlights[].stopsNumber
-Type: number
+Type: integer
 Required: Yes
 Nullable: No
-Trigger: Successful search with round-trip.
-Description: Number of stops.
+Trigger: Inbound-flight item returned by API-FLIGHTS-SEARCH.
+Description: Stop-count value carried by the flight item.
 Example: 0
 
 ### arrivingFlights[].stopsInfo
 Type: string
 Required: Yes
-Nullable: No
-Trigger: Successful search with round-trip.
-Description: Stop information.
-Example: ""Direct"""
+Nullable: Yes
+Trigger: Inbound-flight item returned by API-FLIGHTS-SEARCH.
+Description: Stop-information display value for the flight item.
+Example: "Non-stop"
 
 ### priceGrid
 Type: array
 Required: Yes
 Nullable: No
-Trigger: Successful search.
-Description: Matrix of lowest prices for flexible dates (+/- 3 days).
+Trigger: API-FLIGHTS-SEARCH success response.
+Description: Tripma flexible-date fare collection.
 Example: []
 
 ### priceGrid[].departingDate
 Type: string; Format: date
 Required: Yes
 Nullable: No
-Trigger: Successful search.
-Description: The departure date in the grid matrix.
-Example: "2024-08-12"
+Trigger: Fare-grid item returned by API-FLIGHTS-SEARCH.
+Description: Departure-date value carried by the grid item.
+Example: "2027-07-04"
 
 ### priceGrid[].returningDate
 Type: string; Format: date
-Required: Conditionally (Yes if type=true)
-Nullable: Yes
-Trigger: Successful search for round-trip.
-Description: The returning date in the grid matrix (null for one-way).
-Example: "2024-08-17"
+Required: No
+Nullable: No
+Trigger: Fare-grid item returned by API-FLIGHTS-SEARCH when the field is supplied.
+Description: Return-date value carried by the grid item.
+Example: "2027-07-09"
 
 ### priceGrid[].minPrice
 Type: number
 Required: Yes
 Nullable: No
-Trigger: Successful search.
-Description: The lowest combined price for this specific date cross-section.
-Example: 450
+Trigger: Fare-grid item returned by API-FLIGHTS-SEARCH.
+Description: Fare amount carried by the grid item.
+Example: 4760000
 
 ### priceHistory
 Type: array
 Required: Yes
 Nullable: No
-Trigger: Successful search.
-Description: Array of historical average prices for the past 30 days.
+Trigger: API-FLIGHTS-SEARCH success response.
+Description: Tripma fare-history collection.
 Example: []
 
 ### priceHistory[].recordedDate
 Type: string; Format: date
 Required: Yes
 Nullable: No
-Trigger: Successful search.
-Description: The past date when the price was recorded.
-Example: "2024-07-15"
+Trigger: Fare-history item returned by API-FLIGHTS-SEARCH.
+Description: Recorded-date value carried by the history item.
+Example: "2026-09-01"
 
 ### priceHistory[].averagePrice
 Type: number
 Required: Yes
 Nullable: No
-Trigger: Successful search.
-Description: The average price of the route on the recorded date.
-Example: 480
+Trigger: Fare-history item returned by API-FLIGHTS-SEARCH.
+Description: Fare amount carried by the history item.
+Example: 2380000
 
 ## Error Response — HTTP 400
 
@@ -405,9 +433,9 @@ Example: 480
 Type: string | string[]
 Required: Yes
 Nullable: No
-Trigger: Missing required parameters, identical cities, past dates, endDate < startDate, unaccompanied minor, or exceeding maximum passengers.
-Description: Error description indicating which business rule validation failed.
-Example: [""startDate cannot be in the past"", ""Total passengers cannot exceed 9""]
+Trigger: API-FLIGHTS-SEARCH rejects the submitted request.
+Description: Tripma search-request error detail.
+Example: ["Search request could not be accepted"]
 Note: The response should use standard error envelopes if configured in the global exception filter.
 
 ## Error Response — HTTP 500
@@ -417,7 +445,7 @@ Note: The response should use standard error envelopes if configured in the glob
 Type: string
 Required: Yes
 Nullable: No
-Trigger: Database connection failure, timeout, or unexpected internal server error.
-Description: Generic error message returned by the server.
-Example: ""Internal Server Error""
+Trigger: API-FLIGHTS-SEARCH cannot complete because of a technical failure.
+Description: Generic Tripma service-error detail.
+Example: "Tripma could not complete the flight search"
 Note: The response should use standard error envelopes if configured in the global exception filter.
