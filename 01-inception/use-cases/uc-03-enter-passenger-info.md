@@ -3,16 +3,13 @@ artifact_type: business-use-case-specification
 status: "Draft"
 uc_id: UC-03
 uc_name: "Enter Passenger Information"
-source_type: google-sheets
-source_spreadsheet_id: 1MWKBKTHG4J6is5z-MJ8rNgbOU72Vs0C5YG8ITCSoawY
-source_sheet: "Use cases"
-source_range: "A66:B81"
-retrieved_at: 2026-09-10T15:49:24.0389327+07:00
+source_type: repository-reference
+reference_project: Tripma
 ---
 
 # UC-03: Enter Passenger Information
 
-> Source reference: [Tripma Specification](https://docs.google.com/spreadsheets/d/1MWKBKTHG4J6is5z-MJ8rNgbOU72Vs0C5YG8ITCSoawY/edit?usp=sharing), tab Use cases, columns A-B. This repository version may refine the reference behavior for the target system.
+> Reference basis: the Tripma application source and its implemented or visibly planned functionality. This specification may complete that functionality for the target system.
 
 ## Functional Use-Case Specification
 
@@ -26,7 +23,7 @@ Enter Passenger Information
 
 ### Description
 
-As a visitor, I want to provide passenger and booking-contact information for my selected Tripma itinerary so that I can continue to seat selection.
+As a visitor, I want to provide passenger and emergency-contact information for my selected Tripma itinerary so that I can continue to seat selection.
 
 ### Actor(s)
 
@@ -54,9 +51,9 @@ POST-3: When the submitted information cannot be accepted, Tripma keeps the visi
 ### Basic Flow
 
 1. Tripma opens the passenger-information experience for the current flight selection.
-2. Tripma presents the passenger, booking-contact, and baggage controls required for the current trip.
+2. Tripma presents the passenger, emergency-contact, and baggage controls for the current trip.
 3. The visitor provides passenger information.
-4. The visitor provides booking-contact information.
+4. The visitor provides emergency-contact information.
 5. The visitor provides baggage information.
 6. Tripma evaluates the current form according to the Business Rules of this use case.
 7. Tripma makes the seat-selection action available when the form is ready to continue.
@@ -69,20 +66,20 @@ POST-3: When the submitted information cannot be accepted, Tripma keeps the visi
 
 ### Alternative Flow
 
-AF-1: Use a passenger as the booking contact
-4a. The visitor chooses the offered passenger-contact option.
-4b. Tripma updates the contact portion of the form according to the Business Rules.
+AF-1: Use passenger information for the emergency contact
+4a. The visitor chooses the corresponding contact option.
+4b. Tripma updates the form according to the Business Rules.
 4c. The Basic Flow resumes at step 5.
 
-AF-2: Provide a separate booking contact
-4d. The visitor chooses to provide separate booking-contact information.
-4e. Tripma presents the corresponding contact controls.
-4f. The visitor provides the contact information.
+AF-2: Provide a separate emergency contact
+4d. The visitor chooses the separate-contact path.
+4e. Tripma presents the corresponding controls.
+4f. The visitor provides the requested information.
 4g. The Basic Flow resumes at step 5.
 
-AF-3: Leave optional information empty
-3a. The visitor omits one or more optional inputs.
-3b. Tripma retains the omitted state.
+AF-3: Use an alternate permitted form state
+3a. The visitor uses an alternate input path offered by the form.
+3b. Tripma retains the current form state according to the Business Rules.
 3c. The Basic Flow resumes at step 4.
 
 AF-4: Save and close the in-progress form
@@ -120,7 +117,7 @@ EF-4: In-progress form cannot be saved or restored
 
 ### Related UI
 
-Passenger-information step of the booking page (`/booking`); passenger form; booking-contact form; baggage controls; Save and Close action; seat-selection action
+Passenger-information step of the booking page (`/booking`); passenger form; emergency-contact form; baggage controls; Save and Close action; seat-selection action
 
 ### Related API IDs
 
@@ -128,7 +125,7 @@ API-PASSENGER-INFO-PREPARE
 
 ### Notes
 
-Scope clarification: This use case prepares information for the next booking step. It does not create a booking, assign a seat, take payment, or commit passenger records. Those actions belong to later use cases.
+Scope clarification: This use case prepares the passenger-information context used by the next Tripma booking step.
 
 ## UML Model
 
@@ -159,7 +156,7 @@ class PassengerInfo <<Entity>> {
   knownTravelerNumber: String [0..1]
 }
 
-class BookingContact <<Entity>> {
+class EmergencyContact <<Entity>> {
   id: UUID [1]
   bookingId: UUID [1]
   firstName: String [1]
@@ -193,6 +190,11 @@ class SearchDto <<DTO>> {
   type: Boolean [1]
 }
 
+enum SeatClass {
+  ECONOMY
+  BUSINESS
+}
+
 class FlightDto <<DTO>> {
   flightId: UUID [1]
   fromCity: String [1]
@@ -207,6 +209,7 @@ class FlightDto <<DTO>> {
   date: DateTime [1]
   arrivalAt: DateTime [1]
   availableSeats: Integer [1]
+  availableSeatClasses: SeatClass [1..*]
   stopsNumber: Integer [1]
   stopsInfo: String [0..1]
 }
@@ -238,7 +241,7 @@ class PassengerBaggageInputDto <<DTO>> {
   returningCheckedBags: Integer [0..1]
 }
 
-class BookingContactInputDto <<DTO>> {
+class EmergencyContactInputDto <<DTO>> {
   usePrimaryPassenger: Boolean [1]
   firstName: String [0..1]
   lastName: String [0..1]
@@ -251,7 +254,7 @@ class PassengerFormDto <<DTO>> {
   primaryPassengerRef: String [1]
   passengers: PassengerInputDto [1..*]
   baggage: PassengerBaggageInputDto [1..*]
-  contact: BookingContactInputDto [1]
+  emergencyContact: EmergencyContactInputDto [1]
 }
 
 class PreparedPassengerContextDto <<DTO>> {
@@ -260,7 +263,7 @@ class PreparedPassengerContextDto <<DTO>> {
   primaryPassengerRef: String [1]
   passengers: PassengerInputDto [1..*]
   baggage: PassengerBaggageInputDto [1..*]
-  contact: BookingContactInputDto [1]
+  emergencyContact: EmergencyContactInputDto [1]
   preparedAt: DateTime [1]
 }
 
@@ -285,7 +288,7 @@ class PassengerInformationService <<Service>> {
 }
 
 Booking "1" -- "1..*" PassengerInfo : contains
-Booking "1" -- "1" BookingContact : uses
+Booking "1" -- "1" EmergencyContact : uses
 PassengerInfo "1" -- "1..*" PassengerBaggage : has
 
 SelectedFlightContextDto "1" *-- "1" FlightDto : departing
@@ -294,10 +297,10 @@ PassengerTripContextDto "1" *-- "1" SelectedFlightContextDto : selected flights
 PassengerTripContextDto "1" *-- "1" SearchDto : search parameters
 PassengerFormDto "1" *-- "1..*" PassengerInputDto : passengers
 PassengerFormDto "1" *-- "1..*" PassengerBaggageInputDto : baggage
-PassengerFormDto "1" *-- "1" BookingContactInputDto : contact
+PassengerFormDto "1" *-- "1" EmergencyContactInputDto : emergency contact
 PreparedPassengerContextDto "1" *-- "1..*" PassengerInputDto : passengers
 PreparedPassengerContextDto "1" *-- "1..*" PassengerBaggageInputDto : baggage
-PreparedPassengerContextDto "1" *-- "1" BookingContactInputDto : contact
+PreparedPassengerContextDto "1" *-- "1" EmergencyContactInputDto : emergency contact
 PassengerInformationState "1" *-- "1" PassengerTripContextDto : current trip
 PassengerInformationState "1" *-- "1" PassengerFormDto : current form
 PassengerInformationState "1" *-- "0..1" PreparedPassengerContextDto : prepared result
@@ -308,7 +311,7 @@ PassengerInformationService ..> PreparedPassengerContextDto
 PassengerInformationService ..> SavedPassengerFormDto
 
 PassengerInfo ..> PassengerInputDto : later maps from
-BookingContact ..> BookingContactInputDto : later maps from
+EmergencyContact ..> EmergencyContactInputDto : later maps from
 PassengerBaggage ..> PassengerBaggageInputDto : later maps from
 
 note right of SelectedFlightContextDto
@@ -346,7 +349,7 @@ end note
 The following rules are authoritative for Prompt E. OCL is preserved where applicable; technical or non-OCL constraints remain authoritative natural-language requirements.
 
 ~~~text
-BR-PASS-001: Passenger coverage and primary passenger
+BR-PASS-001: Current trip context
 context PassengerInformationService::prepare(
   tripContext : PassengerTripContextDto,
   form : PassengerFormDto
@@ -356,11 +359,19 @@ pre BR_PASS_001_CurrentSelection:
     tripContext.selectedFlights.selectionContextKey
 
 pre BR_PASS_001_TripTypeConsistent:
-  tripContext.searchParams.type = tripContext.selectedFlights.type and
+  tripContext.searchParams.type = tripContext.selectedFlights.type
+
+
+BR-PASS-002: Passenger coverage
+context PassengerInformationService::prepare(
+  tripContext : PassengerTripContextDto,
+  form : PassengerFormDto
+) : PreparedPassengerContextDto
+pre BR_PASS_002_PassengerCount:
   form.passengers->size() =
     tripContext.searchParams.adults + tripContext.searchParams.minors
 
-pre BR_PASS_001_PassengerTypesMatchSearch:
+pre BR_PASS_002_PassengerTypesMatchSearch:
   form.passengers->select(p |
     p.passengerType = PassengerType::ADULT)->size() =
       tripContext.searchParams.adults and
@@ -368,21 +379,33 @@ pre BR_PASS_001_PassengerTypesMatchSearch:
     p.passengerType = PassengerType::MINOR)->size() =
       tripContext.searchParams.minors
 
-pre BR_PASS_001_UniqueReferences:
+
+BR-PASS-003: Unique passenger references
+context PassengerInformationService::prepare(
+  tripContext : PassengerTripContextDto,
+  form : PassengerFormDto
+) : PreparedPassengerContextDto
+pre BR_PASS_003_UniqueReferences:
   form.passengers->isUnique(p | p.passengerRef)
 
-pre BR_PASS_001_PrimaryPassenger:
+
+BR-PASS-004: Primary passenger
+context PassengerInformationService::prepare(
+  tripContext : PassengerTripContextDto,
+  form : PassengerFormDto
+) : PreparedPassengerContextDto
+pre BR_PASS_004_PrimaryPassenger:
   form.passengers->one(passenger |
     passenger.passengerRef = form.primaryPassengerRef and
     passenger.passengerType = PassengerType::ADULT)
 
 
-BR-PASS-002: Required passenger information
+BR-PASS-005: Required passenger information
 context PassengerInformationService::prepare(
   tripContext : PassengerTripContextDto,
   form : PassengerFormDto
 ) : PreparedPassengerContextDto
-pre BR_PASS_002_RequiredValues:
+pre BR_PASS_005_RequiredValues:
   form.passengers->forAll(passenger |
     not passenger.passengerRef.oclIsUndefined() and
     trim(passenger.passengerRef).size() > 0 and
@@ -394,12 +417,12 @@ pre BR_PASS_002_RequiredValues:
   )
 
 
-BR-PASS-003: Passenger type and date of birth
+BR-PASS-006: Date of birth precedes departure
 context PassengerInformationService::prepare(
   tripContext : PassengerTripContextDto,
   form : PassengerFormDto
 ) : PreparedPassengerContextDto
-pre BR_PASS_003_BirthDatesPrecedeDeparture:
+pre BR_PASS_006_BirthDatesPrecedeDeparture:
   let departureDate : Date = localDate(
         tripContext.selectedFlights.departingFlight.date,
         timeZoneForCity(
@@ -410,7 +433,13 @@ pre BR_PASS_003_BirthDatesPrecedeDeparture:
     form.passengers->forAll(passenger |
       passenger.dateOfBirth < departureDate)
 
-pre BR_PASS_003_PassengerTypesMatchAgeOnDeparture:
+
+BR-PASS-007: Passenger type matches age at departure
+context PassengerInformationService::prepare(
+  tripContext : PassengerTripContextDto,
+  form : PassengerFormDto
+) : PreparedPassengerContextDto
+pre BR_PASS_007_PassengerTypesMatchAgeOnDeparture:
   let departureDate : Date = localDate(
         tripContext.selectedFlights.departingFlight.date,
         timeZoneForCity(
@@ -426,12 +455,12 @@ pre BR_PASS_003_PassengerTypesMatchAgeOnDeparture:
     )
 
 
-BR-PASS-004: Passenger and booking-contact information
+BR-PASS-008: Optional passenger contact information
 context PassengerInformationService::prepare(
   tripContext : PassengerTripContextDto,
   form : PassengerFormDto
 ) : PreparedPassengerContextDto
-pre BR_PASS_004_PassengerChannelsWhenPresent:
+pre BR_PASS_008_PassengerChannelsWhenPresent:
   form.passengers->forAll(passenger |
     (passenger.email.oclIsUndefined() or
       isEmail(lower(trim(passenger.email)))) and
@@ -439,44 +468,47 @@ pre BR_PASS_004_PassengerChannelsWhenPresent:
       isPhone(trim(passenger.phone)))
   )
 
-pre BR_PASS_004_ContactSource:
-  let primary : PassengerInputDto = form.passengers->any(passenger |
-        passenger.passengerRef = form.primaryPassengerRef)
-  in
-    if form.contact.usePrimaryPassenger then
-      not primary.email.oclIsUndefined() and
-      isEmail(lower(trim(primary.email))) and
-      not primary.phone.oclIsUndefined() and
-      isPhone(trim(primary.phone))
-    else
-      not form.contact.firstName.oclIsUndefined() and
-      trim(form.contact.firstName).size() > 0 and
-      not form.contact.lastName.oclIsUndefined() and
-      trim(form.contact.lastName).size() > 0 and
-      not form.contact.email.oclIsUndefined() and
-      isEmail(lower(trim(form.contact.email))) and
-      not form.contact.phone.oclIsUndefined() and
-      isPhone(trim(form.contact.phone))
-    endif
 
-
-BR-PASS-005: Baggage coverage and limits
+BR-PASS-009: Emergency contact
 context PassengerInformationService::prepare(
   tripContext : PassengerTripContextDto,
   form : PassengerFormDto
 ) : PreparedPassengerContextDto
-pre BR_PASS_005_OneEntryPerPassenger:
+pre BR_PASS_009_ContactSource:
+  isEmergencyContactValid(form)
+
+
+BR-PASS-010: One baggage entry per passenger
+context PassengerInformationService::prepare(
+  tripContext : PassengerTripContextDto,
+  form : PassengerFormDto
+) : PreparedPassengerContextDto
+pre BR_PASS_010_OneEntryPerPassenger:
   form.baggage->size() = form.passengers->size() and
   form.baggage->isUnique(item | item.passengerRef) and
   form.baggage->forAll(item |
     form.passengers->exists(passenger |
       passenger.passengerRef = item.passengerRef))
-pre BR_PASS_005_DepartingRange:
+
+
+BR-PASS-011: Departing checked-baggage limit
+context PassengerInformationService::prepare(
+  tripContext : PassengerTripContextDto,
+  form : PassengerFormDto
+) : PreparedPassengerContextDto
+pre BR_PASS_011_DepartingRange:
   form.baggage->forAll(item |
     item.departingCheckedBags >= 0 and
     item.departingCheckedBags <=
       tripContext.departingMaxCheckedBagsPerPassenger)
-pre BR_PASS_005_ReturningRange:
+
+
+BR-PASS-012: Returning checked-baggage limit
+context PassengerInformationService::prepare(
+  tripContext : PassengerTripContextDto,
+  form : PassengerFormDto
+) : PreparedPassengerContextDto
+pre BR_PASS_012_ReturningRange:
   if tripContext.selectedFlights.type = true then
     not tripContext.selectedFlights.returningFlight.oclIsUndefined() and
     not tripContext.returningMaxCheckedBagsPerPassenger.oclIsUndefined() and
@@ -491,67 +523,69 @@ pre BR_PASS_005_ReturningRange:
     form.baggage->forAll(item |
       item.returningCheckedBags.oclIsUndefined())
   endif
-Technical constraint:
+Technical constraints:
 - The service obtains baggage limits from the authoritative selected-flight data addressed by the request; it does not accept a client-supplied baggage limit as authoritative.
 
 
-BR-PASS-006: Prepared passenger context
+BR-PASS-013: Prepared passenger context
 context PassengerInformationService::prepare(
   tripContext : PassengerTripContextDto,
   form : PassengerFormDto
 ) : PreparedPassengerContextDto
-post BR_PASS_006_ContextIdentity:
+post BR_PASS_013_ContextIdentity:
   not result.passengerContextKey.oclIsUndefined() and
   trim(result.passengerContextKey).size() > 0 and
   result.selectionContextKey = tripContext.selectedFlights.selectionContextKey and
   result.primaryPassengerRef = form.primaryPassengerRef and
   not result.preparedAt.oclIsUndefined()
 
-post BR_PASS_006_ContextData:
+post BR_PASS_013_ContextData:
   result.passengers = normalizePassengers(form.passengers) and
   result.baggage = form.baggage and
-  result.contact = bookingContactOf(form)
+  result.emergencyContact = emergencyContactOf(form)
 
 
-BR-PASS-007: Completion readiness
+BR-PASS-014: Completion readiness
 context PassengerInformationService::canContinue(
   tripContext : PassengerTripContextDto,
   form : PassengerFormDto
 ) : Boolean
-post BR_PASS_007_Result:
+post BR_PASS_014_Result:
   result = self.isPassengerInputValid(tripContext, form)
 
 
-BR-PASS-008: Save and restore the current passenger form
+BR-PASS-015: Save the current passenger form
 context PassengerInformationService::saveForm(
   tripContext : PassengerTripContextDto,
   form : PassengerFormDto
 ) : SavedPassengerFormDto
-pre BR_PASS_008_CurrentContextToSave:
+pre BR_PASS_015_CurrentContextToSave:
   form.selectionContextKey = tripContext.selectedFlights.selectionContextKey
-post BR_PASS_008_SavedForm:
+post BR_PASS_015_SavedForm:
   result.selectionContextKey = tripContext.selectedFlights.selectionContextKey and
   result.form = form and
   not result.savedAt.oclIsUndefined()
 
+
+BR-PASS-016: Restore a saved passenger form
 context PassengerInformationService::restoreForm(
   tripContext : PassengerTripContextDto,
   saved : SavedPassengerFormDto
 ) : PassengerFormDto
-pre BR_PASS_008_SameSelectionContext:
+pre BR_PASS_016_SameSelectionContext:
   saved.selectionContextKey = tripContext.selectedFlights.selectionContextKey and
   saved.form.selectionContextKey = tripContext.selectedFlights.selectionContextKey
-post BR_PASS_008_RestoredForm:
+post BR_PASS_016_RestoredForm:
   result = saved.form
 Technical constraints:
 - Saved passenger data must use protected, time-limited storage. It must be removed when the flight selection changes, the booking finishes, the visitor discards the form, or the retention period expires.
 - A saved form that cannot be read safely or no longer belongs to the current selection is ignored without replacing the current usable form.
 
 
-BR-PASS-009: Preparation has no persistence side effects
+BR-PASS-017: Preparation has no persistence side effects
 API-PASSENGER-INFO-PREPARE shall not create, update, or delete Booking,
-PassengerInfo, BookingContact, PassengerBaggage, Flight, or Seat records.
-Technical constraint:
-- Passenger information is sent only in an HTTPS request body. Query strings, URLs, analytics payloads, and application logs must not contain raw passenger or contact values.
+PassengerInfo, EmergencyContact, PassengerBaggage, Flight, or Seat records.
+Technical constraints:
+- Passenger information is sent only in an HTTPS request body. Query strings, URLs, analytics payloads, and application logs must not contain raw passenger or emergency-contact values.
 
 ~~~

@@ -3,16 +3,13 @@ artifact_type: business-use-case-specification
 status: "Draft"
 uc_id: UC-01
 uc_name: "Search Flights"
-source_type: google-sheets
-source_spreadsheet_id: 1MWKBKTHG4J6is5z-MJ8rNgbOU72Vs0C5YG8ITCSoawY
-source_sheet: "Use cases"
-source_range: "A3:B34"
-retrieved_at: 2026-08-27T03:49:28.570Z
+source_type: repository-reference
+reference_project: Tripma
 ---
 
 # UC-01: Search Flights
 
-> Source reference: [Tripma Specification](https://docs.google.com/spreadsheets/d/1MWKBKTHG4J6is5z-MJ8rNgbOU72Vs0C5YG8ITCSoawY/edit?usp=sharing), tab Use cases, columns A-B. This repository version may refine the reference behavior for the target system.
+> Reference basis: the Tripma application source and its implemented or visibly planned functionality. This specification may complete that functionality for the target system.
 
 ## Functional Use-Case Specification
 
@@ -182,6 +179,7 @@ class FlightDto <<DTO>> {
   date: DateTime [1]
   arrivalAt: DateTime [1]
   availableSeats: Integer [1]
+  availableSeatClasses: SeatClass [1..*]
   stopsNumber: Integer [1]
   stopsInfo: String [0..1]
 }
@@ -197,6 +195,18 @@ class PriceHistoryDto <<DTO>> {
   averagePrice: Decimal [1]
 }
 
+enum PriceRecommendation {
+  BUY_SOON
+  WAIT
+}
+
+class PriceRatingDto <<DTO>> {
+  averagePrice: Decimal [1]
+  projectedPrice: Decimal [1]
+  projectedChangePercent: Decimal [1]
+  recommendation: PriceRecommendation [1]
+}
+
 enum DepartureTimeBand {
   MORNING
   AFTERNOON
@@ -207,6 +217,8 @@ class FlightFilterDto <<DTO>> {
   maxTotalPrice: Decimal [0..1]
   departureTimeBand: DepartureTimeBand [0..1]
   airlines: String [0..*]
+  stopCounts: Integer [0..*]
+  seatClasses: SeatClass [0..*]
 }
 
 class SearchResponseDto <<DTO>> {
@@ -215,6 +227,7 @@ class SearchResponseDto <<DTO>> {
   arrivingFlights: FlightDto [0..*]
   priceGrid: PriceGridDto [0..*]
   priceHistory: PriceHistoryDto [0..*]
+  priceRating: PriceRatingDto [0..1]
 }
 
 class FlightService <<Service>> {
@@ -235,6 +248,7 @@ FlightFilterService ..> FlightDto
 SearchResponseDto "1" -- "0..*" FlightDto : contains
 SearchResponseDto "1" -- "0..*" PriceGridDto : contains
 SearchResponseDto "1" -- "0..*" PriceHistoryDto : contains
+SearchResponseDto "1" -- "0..1" PriceRatingDto : contains
 FlightDto ..> Flight : maps from
 PriceHistoryDto ..> RoutePriceHistory : aggregates from
 
@@ -242,6 +256,9 @@ note right of FlightDto
   availableSeats is a calculated field 
   derived from the count of related Seat 
   entities where available = true.
+
+  availableSeatClasses is calculated from
+  the classes of those available seats.
 
   type is projected from SearchDto.type;
   it is not persisted on Flight.
@@ -302,7 +319,7 @@ post BR_SEARCH_003_ReturningDateRange:
     result.arrivingFlights->forAll(flight |
       isOnLocalDate(flight.date, dto.endDate, dto.toCity)
     )
-BR-SEARCH-004: Round-trip requirements
+BR-SEARCH-004: Return-date presence
 context FlightService::search(
   dto : SearchDto
 ) : SearchResponseDto
@@ -310,150 +327,160 @@ pre BR_SEARCH_004_EndDateRequired:
   dto.type = true implies not dto.endDate.oclIsUndefined()
 pre BR_SEARCH_004_EndDateOmittedForOneWay:
   dto.type = false implies dto.endDate.oclIsUndefined()
-post BR_SEARCH_004_OnlyWhenRoundTrip:
+
+
+BR-SEARCH-005: Returned legs match the trip type
+context FlightService::search(
+  dto : SearchDto
+) : SearchResponseDto
+post BR_SEARCH_005_OnlyWhenRoundTrip:
   dto.type = false implies
     result.arrivingFlights->isEmpty()
-post BR_SEARCH_004_TripTypeProjection:
+post BR_SEARCH_005_TripTypeProjection:
   result.departingFlights->forAll(flight | flight.type = dto.type) and
   result.arrivingFlights->forAll(flight | flight.type = dto.type)
 
 
-BR-SEARCH-005: Flight city matching
+BR-SEARCH-006: Flight city matching
 context FlightService::search(
   dto : SearchDto
 ) : SearchResponseDto
-post BR_SEARCH_005_DepartingCities:
+post BR_SEARCH_006_DepartingCities:
   result.departingFlights->forAll(departingFlight |
     lower(trim(departingFlight.fromCity)) = lower(trim(dto.fromCity)) and
     lower(trim(departingFlight.toCity)) = lower(trim(dto.toCity))
   )
-post BR_SEARCH_005_ReversedCities:
+post BR_SEARCH_006_ReversedCities:
   result.arrivingFlights->forAll(arrivingFlight |
     lower(trim(arrivingFlight.fromCity)) = lower(trim(dto.toCity)) and
     lower(trim(arrivingFlight.toCity)) = lower(trim(dto.fromCity))
   )
-Non-OCL requirement:
+Technical constraints:
 - The response must not silently omit a flight that satisfies every applicable eligibility rule for its leg.
 
 
-BR-SEARCH-006: Required and well-formed search input
+BR-SEARCH-007: Required and well-formed search input
 context FlightService::search(
   dto : SearchDto
 ) : SearchResponseDto
-pre BR_SEARCH_006_RequiredInput:
+pre BR_SEARCH_007_RequiredInput:
   not dto.fromCity.oclIsUndefined() and trim(dto.fromCity) <> '' and
   not dto.toCity.oclIsUndefined() and trim(dto.toCity) <> '' and
   not dto.startDate.oclIsUndefined() and
   not dto.adults.oclIsUndefined() and
   not dto.minors.oclIsUndefined() and
   not dto.type.oclIsUndefined()
-pre BR_SEARCH_006_SupportedCities:
+
+
+BR-SEARCH-008: Supported cities
+context FlightService::search(
+  dto : SearchDto
+) : SearchResponseDto
+pre BR_SEARCH_008_SupportedCities:
   isSupportedCity(dto.fromCity) and
   isSupportedCity(dto.toCity)
 
 
-BR-SEARCH-007: Distinct origin and destination
+BR-SEARCH-009: Distinct origin and destination
 context FlightService::search(
   dto : SearchDto
 ) : SearchResponseDto
-pre BR_SEARCH_007_DifferentCities:
+pre BR_SEARCH_009_DifferentCities:
   lower(trim(dto.fromCity)) <> lower(trim(dto.toCity))
 
 
-BR-SEARCH-008: Future departure date
+BR-SEARCH-010: Future departure date
 context FlightService::search(
   dto : SearchDto
 ) : SearchResponseDto
-pre BR_SEARCH_008_NoPastFlights:
+pre BR_SEARCH_010_NoPastFlights:
   dto.startDate >= todayIn(
     timeZoneForCity(dto.fromCity)
   )
 
 
-BR-SEARCH-009: Valid date sequence for round trips
+BR-SEARCH-011: Valid date sequence for round trips
 context FlightService::search(
   dto : SearchDto
 ) : SearchResponseDto
-pre BR_SEARCH_009_ValidReturnDate:
+pre BR_SEARCH_011_ValidReturnDate:
   dto.type = true implies
     dto.endDate >= dto.startDate
 
 
-BR-SEARCH-010: Unaccompanied minor restriction
+BR-SEARCH-012: Unaccompanied minor restriction
 context FlightService::search(
   dto : SearchDto
 ) : SearchResponseDto
-pre BR_SEARCH_010_AdultRequiredForMinors:
+pre BR_SEARCH_012_AdultRequiredForMinors:
   dto.minors > 0 implies dto.adults >= 1
 
 
-BR-SEARCH-011: Maximum passenger limit
+BR-SEARCH-013: Maximum passenger limit
 context FlightService::search(
   dto : SearchDto
 ) : SearchResponseDto
-pre BR_SEARCH_011_PassengerCap:
+pre BR_SEARCH_013_PassengerCap:
   let totalPassengers : Integer = dto.adults + dto.minors
   in
     totalPassengers <= 9
 
 
-BR-SEARCH-012: Advance booking horizon
+BR-SEARCH-014: Advance booking horizon
 context FlightService::search(
   dto : SearchDto
 ) : SearchResponseDto
-pre BR_SEARCH_012_MaxFutureStartDate:
+pre BR_SEARCH_014_MaxFutureStartDate:
   dto.startDate <= todayIn(
     timeZoneForCity(dto.fromCity)
   ) + 330_DAYS
-pre BR_SEARCH_012_MaxFutureEndDate:
+pre BR_SEARCH_014_MaxFutureEndDate:
   dto.type = true implies
     dto.endDate <= todayIn(
       timeZoneForCity(dto.fromCity)
     ) + 330_DAYS
 
 
-BR-SEARCH-013: Price grid matrix calculation
+BR-SEARCH-015: Price-grid date range
 context FlightService::search(
   dto : SearchDto
 ) : SearchResponseDto
-post BR_SEARCH_013_PriceGridBounds:
-  let today : Date = todayIn(
-        timeZoneForCity(dto.fromCity)
-      ),
-      horizon : Date = today + 330_DAYS
-  in
-    result.priceGrid->forAll(gridItem |
-      gridItem.departingDate >= dto.startDate - 3_DAYS and
-      gridItem.departingDate <= dto.startDate + 3_DAYS and
-      gridItem.departingDate >= today and
-      gridItem.departingDate <= horizon and
-      if dto.type = true then
-        not gridItem.returningDate.oclIsUndefined() and
-        gridItem.returningDate >= dto.endDate - 3_DAYS and
-        gridItem.returningDate <= dto.endDate + 3_DAYS and
-        gridItem.returningDate >= gridItem.departingDate and
-        gridItem.returningDate <= horizon
-      else
-        gridItem.returningDate.oclIsUndefined()
-      endif
-    )
-post BR_SEARCH_013_UniqueGridCoordinates:
+post BR_SEARCH_015_PriceGridBounds:
+  result.priceGrid->forAll(gridItem |
+    isPriceGridDateEligible(dto, gridItem)
+  )
+
+
+BR-SEARCH-016: Unique price-grid coordinates
+context FlightService::search(
+  dto : SearchDto
+) : SearchResponseDto
+post BR_SEARCH_016_UniqueGridCoordinates:
   result.priceGrid->isUnique(gridItem |
     Tuple {
       departingDate : Date = gridItem.departingDate,
       returningDate : Date = gridItem.returningDate
     }
   )
-Non-OCL requirements:
+Technical constraints:
 - A grid coordinate is present exactly once only when the required eligible flight option or pair exists.
-- `minPrice` is the minimum eligible outbound subtotal for one-way searches and the minimum eligible outbound-plus-return subtotal for round-trip searches.
 
 
-BR-SEARCH-014: Price history trend generation
+BR-SEARCH-017: Minimum price for each grid coordinate
 context FlightService::search(
   dto : SearchDto
 ) : SearchResponseDto
-post BR_SEARCH_014_HistoryBounds:
+post BR_SEARCH_017_MinimumPrice:
+  result.priceGrid->forAll(gridItem |
+    gridItem.minPrice = priceGridMinimum(dto, gridItem)
+  )
+
+
+BR-SEARCH-018: Price-history date range
+context FlightService::search(
+  dto : SearchDto
+) : SearchResponseDto
+post BR_SEARCH_018_HistoryBounds:
   let today : Date = todayIn(
         timeZoneForCity(dto.fromCity)
       )
@@ -462,38 +489,56 @@ post BR_SEARCH_014_HistoryBounds:
       historyItem.recordedDate < today and
       historyItem.recordedDate >= today - 30_DAYS
     )
-post BR_SEARCH_014_OnePointPerRecordedDate:
-  result.priceHistory->isUnique(historyItem | historyItem.recordedDate)
-post BR_SEARCH_014_ChronologicalOrder:
-  isStrictlyAscending(
-    result.priceHistory->collect(item | item.recordedDate)
-  )
-Non-OCL requirements:
-- Each represented local date contains the arithmetic mean of its stored fare observations for the normalized outbound route.
-- A date without an observation is omitted rather than represented by a fabricated zero value.
 
 
-BR-SEARCH-015: Monetary currency consistency
+BR-SEARCH-019: Price-history sequence
 context FlightService::search(
   dto : SearchDto
 ) : SearchResponseDto
-post BR_SEARCH_015_CurrencyDefined:
+post BR_SEARCH_019_OnePointPerRecordedDate:
+  result.priceHistory->isUnique(historyItem | historyItem.recordedDate)
+post BR_SEARCH_019_ChronologicalOrder:
+  isStrictlyAscending(
+    result.priceHistory->collect(item | item.recordedDate)
+  )
+
+
+BR-SEARCH-020: Fare history and price rating
+context FlightService::search(
+  dto : SearchDto
+) : SearchResponseDto
+post BR_SEARCH_020_DailyAverage:
+  result.priceHistory->forAll(item |
+    item.averagePrice = routePriceAverage(dto, item.recordedDate)
+  )
+post BR_SEARCH_020_PriceRating:
+  result.priceRating = priceRatingFor(
+    result.departingFlights,
+    result.priceHistory
+  )
+Technical constraints:
+- A date without an observation is omitted rather than represented by a fabricated zero value.
+
+
+BR-SEARCH-021: Monetary currency consistency
+context FlightService::search(
+  dto : SearchDto
+) : SearchResponseDto
+post BR_SEARCH_021_CurrencyDefined:
   not result.currency.oclIsUndefined() and trim(result.currency) <> ''
 Technical constraints:
 - `result.currency` must be an ISO 4217 currency code.
 - Monetary values must be normalized to `result.currency` through the approved conversion and rounding policy before comparison or aggregation.
 
 
-BR-SEARCH-016: Flight result filtering
+BR-SEARCH-022: Active flight filters
 context FlightFilterService::apply(
   flights : Sequence(FlightDto),
   filter : FlightFilterDto
 ) : Sequence(FlightDto)
-pre BR_SEARCH_016_NonNegativeMaximumPrice:
+pre BR_SEARCH_022_NonNegativeMaximumPrice:
   filter.maxTotalPrice.oclIsUndefined() or filter.maxTotalPrice >= 0
-post BR_SEARCH_016_ResultSubset:
-  result->forAll(flight | flights->includes(flight))
-post BR_SEARCH_016_AllActiveFiltersMatch:
+post BR_SEARCH_022_AllActiveFiltersMatch:
   result->forAll(flight |
     (filter.maxTotalPrice.oclIsUndefined() or
       flight.subtotalPrice + flight.taxesAndFees <= filter.maxTotalPrice) and
@@ -505,8 +550,23 @@ post BR_SEARCH_016_AllActiveFiltersMatch:
     (filter.airlines->isEmpty() or
       filter.airlines->exists(airline |
         lower(trim(airline)) = lower(trim(flight.airlineName))
+      )) and
+    (filter.stopCounts->isEmpty() or
+      filter.stopCounts->includes(flight.stopsNumber)) and
+    (filter.seatClasses->isEmpty() or
+      flight.availableSeatClasses->exists(seatClass |
+        filter.seatClasses->includes(seatClass)
       ))
   )
+
+
+BR-SEARCH-023: Filtered result remains a stable subset
+context FlightFilterService::apply(
+  flights : Sequence(FlightDto),
+  filter : FlightFilterDto
+) : Sequence(FlightDto)
+post BR_SEARCH_023_ResultSubset:
+  result->forAll(flight | flights->includes(flight))
 Technical constraints:
 - Filtering preserves the input order and does not mutate the original search response; clearing filters restores that response order.
 

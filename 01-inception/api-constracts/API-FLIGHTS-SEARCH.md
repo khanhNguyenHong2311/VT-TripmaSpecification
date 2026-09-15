@@ -226,6 +226,15 @@ Trigger: Outbound-flight item returned by API-FLIGHTS-SEARCH.
 Description: Seat-availability value carried by the flight item.
 Example: 24
 
+### departingFlights[].availableSeatClasses
+Type: array
+Required: Yes
+Nullable: No
+Allowed values: ECONOMY, BUSINESS
+Trigger: Outbound-flight item returned by API-FLIGHTS-SEARCH.
+Description: Available seat-class values carried by the flight item.
+Example: ["ECONOMY"]
+
 ### departingFlights[].stopsNumber
 Type: integer
 Required: Yes
@@ -354,6 +363,15 @@ Trigger: Inbound-flight item returned by API-FLIGHTS-SEARCH.
 Description: Seat-availability value carried by the flight item.
 Example: 18
 
+### arrivingFlights[].availableSeatClasses
+Type: array
+Required: Yes
+Nullable: No
+Allowed values: ECONOMY, BUSINESS
+Trigger: Inbound-flight item returned by API-FLIGHTS-SEARCH.
+Description: Available seat-class values carried by the flight item.
+Example: ["BUSINESS"]
+
 ### arrivingFlights[].stopsNumber
 Type: integer
 Required: Yes
@@ -425,6 +443,47 @@ Nullable: No
 Trigger: Fare-history item returned by API-FLIGHTS-SEARCH.
 Description: Fare amount carried by the history item.
 Example: 2380000
+
+### priceRating
+Type: object
+Required: No
+Nullable: No
+Trigger: API-FLIGHTS-SEARCH success response when the field is supplied.
+Description: Tripma fare-rating information.
+Example: {}
+
+### priceRating.averagePrice
+Type: number
+Required: Yes
+Nullable: No
+Trigger: Fare-rating object returned by API-FLIGHTS-SEARCH.
+Description: Current fare amount carried by the rating object.
+Example: 2380000
+
+### priceRating.projectedPrice
+Type: number
+Required: Yes
+Nullable: No
+Trigger: Fare-rating object returned by API-FLIGHTS-SEARCH.
+Description: Projected fare amount carried by the rating object.
+Example: 2570000
+
+### priceRating.projectedChangePercent
+Type: number
+Required: Yes
+Nullable: No
+Trigger: Fare-rating object returned by API-FLIGHTS-SEARCH.
+Description: Percentage value carried by the rating object.
+Example: 8
+
+### priceRating.recommendation
+Type: string; Format: enum
+Required: Yes
+Nullable: No
+Allowed values: BUY_SOON, WAIT
+Trigger: Fare-rating object returned by API-FLIGHTS-SEARCH.
+Description: Tripma recommendation value carried by the rating object.
+Example: "BUY_SOON"
 
 ## Error Response — HTTP 400
 

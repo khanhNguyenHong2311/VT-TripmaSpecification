@@ -31,7 +31,7 @@ POST
 
 ### Description
 
-Prepares passenger, booking-contact, and baggage information for the current Tripma booking workflow.
+Prepares passenger, emergency-contact, and baggage information for the current Tripma booking workflow.
 
 ### Authentication
 
@@ -278,58 +278,58 @@ Trigger: Baggage item included in the Tripma request when the field is supplied.
 Description: Inbound checked-baggage count carried by the item.
 Example: 2
 
-### contact
+### emergencyContact
 
 Type: object
 Required: Yes
 Nullable: No
 Trigger: Tripma passenger-information submission.
-Description: Booking-contact object carried by the request.
+Description: Emergency-contact object carried by the request.
 Example: {}
 
-### contact.usePrimaryPassenger
+### emergencyContact.usePrimaryPassenger
 
 Type: boolean
 Required: Yes
 Nullable: No
-Trigger: Booking-contact object included in the Tripma request.
-Description: Passenger-contact selection value carried by the contact object.
+Trigger: Emergency-contact object included in the Tripma request.
+Description: Passenger-selection value carried by the emergency-contact object.
 Example: false
 
-### contact.firstName
+### emergencyContact.firstName
 
 Type: string
 Required: No
 Nullable: No
-Trigger: Booking-contact object included in the Tripma request when the field is supplied.
-Description: First-name value carried by the contact object.
+Trigger: Emergency-contact object included in the Tripma request when the field is supplied.
+Description: First-name value carried by the emergency-contact object.
 Example: "Binh"
 
-### contact.lastName
+### emergencyContact.lastName
 
 Type: string
 Required: No
 Nullable: No
-Trigger: Booking-contact object included in the Tripma request when the field is supplied.
-Description: Last-name value carried by the contact object.
+Trigger: Emergency-contact object included in the Tripma request when the field is supplied.
+Description: Last-name value carried by the emergency-contact object.
 Example: "Tran"
 
-### contact.email
+### emergencyContact.email
 
 Type: string; Format: email
 Required: No
 Nullable: No
-Trigger: Booking-contact object included in the Tripma request when the field is supplied.
-Description: Email value carried by the contact object.
-Example: "contact@example.com"
+Trigger: Emergency-contact object included in the Tripma request when the field is supplied.
+Description: Email value carried by the emergency-contact object.
+Example: "emergency@example.com"
 
-### contact.phone
+### emergencyContact.phone
 
 Type: string; Format: telephone
 Required: No
 Nullable: No
-Trigger: Booking-contact object included in the Tripma request when the field is supplied.
-Description: Telephone value carried by the contact object.
+Trigger: Emergency-contact object included in the Tripma request when the field is supplied.
+Description: Telephone value carried by the emergency-contact object.
 Example: "+6581234567"
 
 ## Success Response — HTTP 200
@@ -515,58 +515,58 @@ Trigger: Prepared baggage item returned by API-PASSENGER-INFO-PREPARE when the f
 Description: Prepared inbound checked-baggage count.
 Example: 1
 
-### contact
+### emergencyContact
 
 Type: object
 Required: Yes
 Nullable: No
 Trigger: API-PASSENGER-INFO-PREPARE success response.
-Description: Prepared Tripma booking-contact object.
+Description: Prepared Tripma emergency-contact object.
 Example: {}
 
-### contact.usePrimaryPassenger
+### emergencyContact.usePrimaryPassenger
 
 Type: boolean
 Required: Yes
 Nullable: No
-Trigger: Prepared booking-contact object returned by API-PASSENGER-INFO-PREPARE.
-Description: Passenger-contact selection value carried by the prepared contact object.
+Trigger: Prepared emergency-contact object returned by API-PASSENGER-INFO-PREPARE.
+Description: Passenger-selection value carried by the prepared emergency-contact object.
 Example: true
 
-### contact.firstName
+### emergencyContact.firstName
 
 Type: string
 Required: Yes
 Nullable: No
-Trigger: Prepared booking-contact object returned by API-PASSENGER-INFO-PREPARE.
-Description: Prepared contact first name.
+Trigger: Prepared emergency-contact object returned by API-PASSENGER-INFO-PREPARE.
+Description: Prepared emergency-contact first name.
 Example: "Mai"
 
-### contact.lastName
+### emergencyContact.lastName
 
 Type: string
 Required: Yes
 Nullable: No
-Trigger: Prepared booking-contact object returned by API-PASSENGER-INFO-PREPARE.
-Description: Prepared contact last name.
+Trigger: Prepared emergency-contact object returned by API-PASSENGER-INFO-PREPARE.
+Description: Prepared emergency-contact last name.
 Example: "Pham"
 
-### contact.email
+### emergencyContact.email
 
 Type: string; Format: email
 Required: Yes
 Nullable: No
-Trigger: Prepared booking-contact object returned by API-PASSENGER-INFO-PREPARE.
-Description: Prepared contact email.
+Trigger: Prepared emergency-contact object returned by API-PASSENGER-INFO-PREPARE.
+Description: Prepared emergency-contact email.
 Example: "mai.pham@example.com"
 
-### contact.phone
+### emergencyContact.phone
 
 Type: string; Format: telephone
 Required: Yes
 Nullable: No
-Trigger: Prepared booking-contact object returned by API-PASSENGER-INFO-PREPARE.
-Description: Prepared contact telephone number.
+Trigger: Prepared emergency-contact object returned by API-PASSENGER-INFO-PREPARE.
+Description: Prepared emergency-contact telephone number.
 Example: "+442071838750"
 
 ## Error Response — HTTP 400

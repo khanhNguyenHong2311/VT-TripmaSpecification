@@ -3,16 +3,13 @@ artifact_type: business-use-case-specification
 status: "Draft"
 uc_id: UC-02
 uc_name: "Select Flight"
-source_type: google-sheets
-source_spreadsheet_id: 1MWKBKTHG4J6is5z-MJ8rNgbOU72Vs0C5YG8ITCSoawY
-source_sheet: "Use cases"
-source_range: "A36:B54"
-retrieved_at: 2026-09-10T11:16:23.6615730+07:00
+source_type: repository-reference
+reference_project: Tripma
 ---
 
 # UC-02: Select Flight
 
-> Source reference: [Tripma Specification](https://docs.google.com/spreadsheets/d/1MWKBKTHG4J6is5z-MJ8rNgbOU72Vs0C5YG8ITCSoawY/edit?usp=sharing), tab Use cases, columns A-B. This repository version may refine the reference behavior for the target system.
+> Reference basis: the Tripma application source and its implemented or visibly planned functionality. This specification may complete that functionality for the target system.
 
 ## Functional Use-Case Specification
 
@@ -130,6 +127,11 @@ class SearchDto <<DTO>> {
   type: Boolean [1]
 }
 
+enum SeatClass {
+  ECONOMY
+  BUSINESS
+}
+
 class FlightDto <<DTO>> {
   flightId: UUID [1]
   fromCity: String [1]
@@ -144,6 +146,7 @@ class FlightDto <<DTO>> {
   date: DateTime [1]
   arrivalAt: DateTime [1]
   availableSeats: Integer [1]
+  availableSeatClasses: SeatClass [1..*]
   stopsNumber: Integer [1]
   stopsInfo: String [0..1]
 }
@@ -172,6 +175,7 @@ class FlightBookingState <<State>> {
 }
 
 class SelectedFlightContextDto <<DTO>> {
+  selectionContextKey: String [1]
   searchContextKey: String [1]
   type: Boolean [1]
   currency: String [1]
@@ -253,7 +257,7 @@ end note
 The following rules are authoritative for Prompt E. OCL is preserved where applicable; technical or non-OCL constraints remain authoritative natural-language requirements.
 
 ~~~text
-BR-SELECT-001: Eligible option and leg assignment
+BR-SELECT-001: Selected option belongs to the requested leg
 context FlightSelectionService::select(
   state : FlightBookingState,
   leg : FlightLeg,
@@ -265,33 +269,49 @@ pre BR_SELECT_001_OptionBelongsToLeg:
   else
     state.returningOptions->includes(flight)
   endif
-pre BR_SELECT_001_TripTypeMatches:
-  flight.type = state.searchParams.type
-pre BR_SELECT_001_LegSupportedByTripType:
-  leg = FlightLeg::RETURNING implies state.searchParams.type = true
 
 
-BR-SELECT-002: Single selection and deterministic replacement
+BR-SELECT-002: Leg matches the trip type
 context FlightSelectionService::select(
   state : FlightBookingState,
   leg : FlightLeg,
   flight : FlightDto
 ) : FlightBookingState
-post BR_SELECT_002_ReplaceDepartingSelection:
+pre BR_SELECT_002_TripTypeMatches:
+  flight.type = state.searchParams.type
+pre BR_SELECT_002_ReturningLegSupported:
+  leg = FlightLeg::RETURNING implies state.searchParams.type = true
+
+
+BR-SELECT-003: Single selection for each leg
+context FlightSelectionService::select(
+  state : FlightBookingState,
+  leg : FlightLeg,
+  flight : FlightDto
+) : FlightBookingState
+post BR_SELECT_003_DepartingSelection:
   leg = FlightLeg::DEPARTING implies
     result.selectedDepartingFlight = flight and
     result.selectedReturningFlight.oclIsUndefined()
-post BR_SELECT_002_ReplaceReturningSelection:
+post BR_SELECT_003_ReturningSelection:
   leg = FlightLeg::RETURNING implies
     result.selectedReturningFlight = flight and
     result.selectedDepartingFlight = state.selectedDepartingFlight
-post BR_SELECT_002_ContextPreserved:
+post BR_SELECT_003_ContextPreserved:
   result.searchContextKey = state.searchContextKey and
   result.searchParams = state.searchParams and
   result.currency = state.currency and
   result.departingOptions = state.departingOptions and
   result.returningOptions = state.returningOptions
-post BR_SELECT_002_UpdatePresentation:
+
+
+BR-SELECT-004: Presentation after selection
+context FlightSelectionService::select(
+  state : FlightBookingState,
+  leg : FlightLeg,
+  flight : FlightDto
+) : FlightBookingState
+post BR_SELECT_004_Presentation:
   result.viewState.summaryOpen = true and
   result.viewState.activeLeg =
     if leg = FlightLeg::DEPARTING and state.searchParams.type = true then
@@ -301,33 +321,36 @@ post BR_SELECT_002_UpdatePresentation:
     endif
 
 
-BR-SELECT-003: Returning-flight chronological compatibility
+BR-SELECT-005: Returning-flight chronological compatibility
 context FlightSelectionService::select(
   state : FlightBookingState,
   leg : FlightLeg,
   flight : FlightDto
 ) : FlightBookingState
-pre BR_SELECT_003_DepartingSelectedFirst:
+pre BR_SELECT_005_DepartingSelectedFirst:
   leg = FlightLeg::RETURNING implies
     not state.selectedDepartingFlight.oclIsUndefined()
-pre BR_SELECT_003_ReturnAfterOutboundArrival:
+pre BR_SELECT_005_ReturnAfterOutboundArrival:
   leg = FlightLeg::RETURNING implies
     flight.date >= state.selectedDepartingFlight.arrivalAt
+
+
+BR-SELECT-006: Selected flights remain chronologically compatible
 context FlightBookingState
-inv BR_SELECT_003_ConsistentSelectionState:
+inv BR_SELECT_006_ConsistentSelectionState:
   not selectedReturningFlight.oclIsUndefined() implies
     not selectedDepartingFlight.oclIsUndefined() and
     searchParams.type = true and
     selectedReturningFlight.date >= selectedDepartingFlight.arrivalAt
-Technical constraint:
+Technical constraints:
 - Compatibility compares normalized timezone-aware instants rather than display strings or isolated local-time components.
 
 
-BR-SELECT-004: Completion readiness
+BR-SELECT-007: Completion readiness
 context FlightSelectionService::canContinue(
   state : FlightBookingState
 ) : Boolean
-post BR_SELECT_004_Result:
+post BR_SELECT_007_Result:
   result =
     if state.searchParams.type = true then
       not state.selectedDepartingFlight.oclIsUndefined() and
@@ -338,13 +361,17 @@ post BR_SELECT_004_Result:
       not state.selectedDepartingFlight.oclIsUndefined() and
       state.selectedReturningFlight.oclIsUndefined()
     endif
-BR-SELECT-005: Atomic completed selection context
+
+
+BR-SELECT-008: Completed selection context
 context FlightSelectionService::createContext(
   state : FlightBookingState
 ) : SelectedFlightContextDto
-pre BR_SELECT_005_ReadyToCreate:
+pre BR_SELECT_008_ReadyToCreate:
   self.canContinue(state)
-post BR_SELECT_005_ContextMatchesSelection:
+post BR_SELECT_008_ContextMatchesSelection:
+  not result.selectionContextKey.oclIsUndefined() and
+  trim(result.selectionContextKey).size() > 0 and
   result.searchContextKey = state.searchContextKey and
   result.type = state.searchParams.type and
   result.currency = state.currency and
@@ -354,60 +381,83 @@ Technical constraints:
 - The completed context is written atomically before navigation; failure preserves the previous completed context and prevents navigation.
 
 
-BR-SELECT-006: Selection does not reserve inventory
+BR-SELECT-009: Selection does not reserve inventory
 Selecting a flight shall not create a booking or modify flight or seat inventory. The booking workflow rechecks the selected flights and capacity before committing a reservation.
 
 
-BR-SELECT-007: Selection summary amounts
+BR-SELECT-010: Selection summary amounts
 context FlightSelectionService::summarize(
   state : FlightBookingState
 ) : FlightSelectionSummaryDto
-post BR_SELECT_007_Subtotal:
+post BR_SELECT_010_Subtotal:
   result.subtotalAmount =
     subtotalOf(state.selectedDepartingFlight) +
     subtotalOf(state.selectedReturningFlight)
-post BR_SELECT_007_TaxesAndFees:
+post BR_SELECT_010_TaxesAndFees:
   result.taxesAndFeesAmount =
     taxesAndFeesOf(state.selectedDepartingFlight) +
     taxesAndFeesOf(state.selectedReturningFlight)
-post BR_SELECT_007_Total:
+post BR_SELECT_010_Total:
   result.totalAmount = result.subtotalAmount + result.taxesAndFeesAmount
-post BR_SELECT_007_Currency:
+
+
+BR-SELECT-011: Selection-summary currency
+context FlightSelectionService::summarize(
+  state : FlightBookingState
+) : FlightSelectionSummaryDto
+post BR_SELECT_011_Currency:
   result.currency = state.currency
 Technical constraints:
 - Displayed amounts use the UC-01 response currency and its approved monetary rounding and formatting policy.
 
 
-BR-SELECT-008: Save and restore the current selection
+BR-SELECT-012: Save the current selection
 context FlightSelectionService::saveSelection(
   state : FlightBookingState
 ) : SavedFlightSelectionDto
-pre BR_SELECT_008_HasSelectionToSave:
+pre BR_SELECT_012_HasSelectionToSave:
   not state.selectedDepartingFlight.oclIsUndefined() or
   not state.selectedReturningFlight.oclIsUndefined()
-post BR_SELECT_008_SavedIdentity:
+post BR_SELECT_012_SavedIdentity:
   result.searchContextKey = state.searchContextKey and
   result.type = state.searchParams.type and
   not result.savedAt.oclIsUndefined()
-post BR_SELECT_008_SavedFlightIdentifiers:
+post BR_SELECT_012_SavedFlightIdentifiers:
   result.departingFlightId = flightIdOf(state.selectedDepartingFlight) and
   result.returningFlightId = flightIdOf(state.selectedReturningFlight)
 
+
+BR-SELECT-013: Saved selection matches the current search
 context FlightSelectionService::restoreSelection(
   state : FlightBookingState,
   saved : SavedFlightSelectionDto
 ) : FlightBookingState
-pre BR_SELECT_008_SameSearchContext:
+pre BR_SELECT_013_SameSearchContext:
   saved.searchContextKey = state.searchContextKey and
-  saved.type = state.searchParams.type
-pre BR_SELECT_008_SavedOptionsStillExist:
+  saved.type = state.searchParams.type and
+  (saved.type = true or saved.returningFlightId.oclIsUndefined())
+
+
+BR-SELECT-014: Saved flights are still available
+context FlightSelectionService::restoreSelection(
+  state : FlightBookingState,
+  saved : SavedFlightSelectionDto
+) : FlightBookingState
+pre BR_SELECT_014_SavedOptionsStillExist:
   (saved.departingFlightId.oclIsUndefined() or
     state.departingOptions->exists(flight |
       flight.flightId = saved.departingFlightId)) and
   (saved.returningFlightId.oclIsUndefined() or
     state.returningOptions->exists(flight |
       flight.flightId = saved.returningFlightId))
-pre BR_SELECT_008_SavedSequenceStillValid:
+
+
+BR-SELECT-015: Saved flight sequence remains compatible
+context FlightSelectionService::restoreSelection(
+  state : FlightBookingState,
+  saved : SavedFlightSelectionDto
+) : FlightBookingState
+pre BR_SELECT_015_SavedSequenceStillValid:
   saved.returningFlightId.oclIsUndefined() or
   (not saved.departingFlightId.oclIsUndefined() and
     saved.type = true and
@@ -415,56 +465,57 @@ pre BR_SELECT_008_SavedSequenceStillValid:
       returningFlight.flightId = saved.returningFlightId).date >=
     state.departingOptions->any(departingFlight |
       departingFlight.flightId = saved.departingFlightId).arrivalAt)
-post BR_SELECT_008_RestoreDepartingSelection:
-  result.selectedDepartingFlight =
-    flightById(state.departingOptions, saved.departingFlightId)
-post BR_SELECT_008_RestoreReturningSelection:
-  result.selectedReturningFlight =
-    flightById(state.returningOptions, saved.returningFlightId)
-post BR_SELECT_008_PreserveCurrentContext:
-  result.searchContextKey = state.searchContextKey and
-  result.searchParams = state.searchParams and
-  result.currency = state.currency and
-  result.departingOptions = state.departingOptions and
-  result.returningOptions = state.returningOptions
 Technical constraints:
 - An invalid saved selection is ignored without replacing valid current state; a storage failure leaves the summary open and is retryable.
 
 
-BR-SELECT-009: Expand the current flight result presentation
+BR-SELECT-016: Restore an eligible saved selection
+context FlightSelectionService::restoreSelection(
+  state : FlightBookingState,
+  saved : SavedFlightSelectionDto
+) : FlightBookingState
+post BR_SELECT_016_RestoredSelection:
+  result.selectedDepartingFlight =
+    flightById(state.departingOptions, saved.departingFlightId) and
+  result.selectedReturningFlight =
+    flightById(state.returningOptions, saved.returningFlightId) and
+  result.searchContextKey = state.searchContextKey and
+  result.searchParams = state.searchParams and
+  result.currency = state.currency
+
+
+BR-SELECT-017: Expand the current flight result presentation
 context FlightSelectionService::expandResults(
   state : FlightBookingState,
   leg : FlightLeg
 ) : FlightBookingState
-post BR_SELECT_009_RequestedLegExpanded:
+post BR_SELECT_017_RequestedLegExpanded:
   if leg = FlightLeg::DEPARTING then
     result.viewState.departingExpanded = true
   else
     result.viewState.returningExpanded = true
   endif
-post BR_SELECT_009_SelectionPreserved:
+post BR_SELECT_017_SelectionPreserved:
   result.selectedDepartingFlight = state.selectedDepartingFlight and
   result.selectedReturningFlight = state.selectedReturningFlight
-post BR_SELECT_009_OptionsPreserved:
+post BR_SELECT_017_OptionsPreserved:
   result.departingOptions = state.departingOptions and
   result.returningOptions = state.returningOptions
-Non-OCL requirements:
-- Show all flights reveals every remaining option after active UC-01 refinements, without duplicates or a redundant refetch of options already held by the client.
-- When all applicable options for the active leg are visible, the Show all flights action must be hidden or unavailable.
+Technical constraints:
+- Expanding locally available results must not trigger a redundant request for options already held by the client.
 
 
-BR-SELECT-010: Selected-card and active-leg presentation
+BR-SELECT-018: Selected-card and active-leg presentation
 context FlightBookingState
-inv BR_SELECT_010_UniqueOptionIdentifiers:
+inv BR_SELECT_018_UniqueOptionIdentifiers:
   departingOptions->isUnique(flight | flight.flightId) and
   returningOptions->isUnique(flight | flight.flightId)
-inv BR_SELECT_010_SelectedOptionsRemainCanonical:
+inv BR_SELECT_018_SelectedOptionsRemainCanonical:
   (selectedDepartingFlight.oclIsUndefined() or
     departingOptions->includes(selectedDepartingFlight)) and
   (selectedReturningFlight.oclIsUndefined() or
     returningOptions->includes(selectedReturningFlight))
-Non-OCL requirements:
-- Exactly the card corresponding to the selected flight identifier for each leg is presented as selected; changing the selection removes that state from the replaced card.
-- A one-way search does not present a returning-flight step; closing or reopening the summary preserves a still-valid in-page selection.
+Technical constraints:
+- Selected-card rendering is keyed by flight identifier so replacement cannot leave more than one card marked for the same leg.
 
 ~~~
