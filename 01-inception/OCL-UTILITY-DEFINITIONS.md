@@ -61,9 +61,6 @@ MakePaymentService:
 - `baggageFeeTotal(context)` returns the combined checked-baggage charge for the required passengers and flight legs.
 - `isCompleteBookingGraph(bookingId, context)` returns true when the booking owns exactly the persistence records required by the checkout context.
 
-AccountService:
-- `isAccountInputValid(email, password)` returns true when the supplied values satisfy Tripma's existing account-creation policy.
-
 Utility and supporting service class declarations:
 
 ~~~plantuml
@@ -196,13 +193,6 @@ class MakePaymentService <<Service>> {
   isCompleteBookingGraph(
     bookingId: UUID,
     context: CheckoutContextDto
-  ): Boolean
-}
-
-class AccountService <<Service>> {
-  isAccountInputValid(
-    email: String,
-    password: String
   ): Boolean
 }
 

@@ -233,53 +233,6 @@ Trigger: Billing-address object included in the request when the field is suppli
 Description: Country value carried by the billing-address object.
 Example: "Singapore"
 
-### accountOption
-
-Type: object
-Required: Yes
-Nullable: No
-Trigger: API-BOOKING-CREATE request body.
-Description: Tripma checkout-account option object.
-Example: {}
-
-### accountOption.createAccount
-
-Type: boolean
-Required: Yes
-Nullable: No
-Default: false
-Trigger: Account-option object included in the request.
-Description: Account-creation selection value carried by the checkout.
-Example: false
-
-### accountOption.email
-
-Type: string; Format: email
-Required: No
-Nullable: Yes
-Trigger: Account-option object included in the request when the field is supplied.
-Description: Account-email value carried by the checkout.
-Example: "traveler@example.com"
-
-### accountOption.password
-
-Type: string; Format: password
-Required: No
-Nullable: Yes
-Trigger: Account-option object included in the request when the field is supplied.
-Description: Account-password value carried by the checkout.
-Example: "Example-password-27"
-
-### accountOption.savePaymentMethod
-
-Type: boolean
-Required: Yes
-Nullable: No
-Default: false
-Trigger: Account-option object included in the request.
-Description: Saved-payment selection value carried by the checkout.
-Example: true
-
 ## Success Response — HTTP 201
 
 ### success
@@ -719,4 +672,4 @@ Example: true
 
 ## Notes
 
-API-BOOKING-CREATE consumes the context chain prepared by UC-02, UC-03 and UC-04. Account creation may use the existing Tripma signup capability as part of the UC-05 checkout orchestration.
+API-BOOKING-CREATE consumes the context chain prepared by UC-02, UC-03 and UC-04. Supporting account and saved-payment use cases remain separate from this contract.

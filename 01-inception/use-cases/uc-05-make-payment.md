@@ -53,18 +53,17 @@ POST-3: When checkout cannot be completed, Tripma keeps the visitor in the payme
 1. Tripma opens the payment experience for the current checkout.
 2. Tripma presents the available payment and supporting checkout controls.
 3. The visitor chooses a payment path and supplies the requested information.
-4. The visitor completes any account, saved-payment, or billing-address option offered by the experience.
+4. The visitor completes the billing-address option offered by the experience.
 5. Tripma evaluates the current checkout form according to the Business Rules of this use case.
 6. The visitor chooses Confirm and pay.
 7. Tripma presents the processing state.
-8. Tripma prepares any selected account step for checkout.
-9. Tripma submits the checkout request through API-BOOKING-CREATE.
-10. The checkout service evaluates the request, account option, and current booking contexts according to the Business Rules.
-11. The checkout service processes the selected payment path.
-12. The booking service completes the booking operation.
-13. API-BOOKING-CREATE returns the booking-confirmation response.
-14. Tripma makes the confirmation context available to the current workflow.
-15. Tripma opens the booking-success experience.
+8. Tripma submits the checkout request through API-BOOKING-CREATE.
+9. The checkout service evaluates the request and current booking contexts according to the Business Rules.
+10. The checkout service processes the selected payment path.
+11. The booking service completes the booking operation.
+12. API-BOOKING-CREATE returns the booking-confirmation response.
+13. Tripma makes the confirmation context available to the current workflow.
+14. Tripma opens the booking-success experience.
 
 ### Alternative Flow
 
@@ -72,26 +71,22 @@ AF-1: Return to seat selection
 6a. The visitor chooses Back to seat select.
 6b. Tripma returns to the existing seat-selection context.
 
-AF-2: Continue as a guest
-4a. The visitor continues without selecting an account option.
-4b. The Basic Flow resumes at step 5.
+AF-2: Create an account during checkout
+3a. The visitor chooses the account-creation option exposed by the payment experience.
+3b. Tripma invokes the separate Create Account use case.
+3c. When that use case succeeds, the Basic Flow resumes at step 3.
 
-AF-3: Create an account during checkout
-4c. The visitor chooses the account option and supplies the requested information.
-4d. Tripma processes the option according to the Business Rules.
-4e. The Basic Flow resumes at step 5.
+AF-3: Save the payment method
+3d. The visitor chooses the saved-payment option exposed by the payment experience.
+3e. Tripma invokes the separate Save Payment Method use case at the applicable checkout point.
+3f. When that use case succeeds, UC-05 resumes without redefining its internal behavior.
 
-AF-4: Save the payment method
-4f. The visitor chooses the saved-payment option.
-4g. Tripma processes the option according to the Business Rules.
-4h. The Basic Flow resumes at step 5.
-
-AF-5: Use another payment path
+AF-4: Use another payment path
 3a. The visitor chooses another payment path offered by Tripma.
 3b. Tripma presents the corresponding controls.
 3c. The Basic Flow resumes at step 3.
 
-AF-6: Use the primary-passenger billing address
+AF-5: Use the primary-passenger billing address
 4i. The visitor chooses the corresponding billing-address option.
 4j. Tripma updates the checkout form according to the Business Rules.
 4k. The Basic Flow resumes at step 5.
@@ -101,24 +96,23 @@ AF-6: Use the primary-passenger billing address
 EF-1: Checkout information requires attention
 5a. If the checkout form does not satisfy the Business Rules, Tripma identifies the affected input and does not submit the booking request.
 
-EF-2: Account step cannot be completed
-8a. If the selected account step fails, Tripma preserves the usable checkout state and presents a recoverable outcome.
-8b. Tripma does not submit API-BOOKING-CREATE.
+EF-2: Supporting use case cannot be completed
+3a. If an invoked supporting use case does not succeed, Tripma returns to the payment experience with its usable checkout state.
 
 EF-3: Payment is not accepted
-11a. If payment processing does not succeed, API-BOOKING-CREATE returns the corresponding payment outcome.
-11b. Tripma preserves the usable checkout state and does not open the success experience.
+10a. If payment processing does not succeed, API-BOOKING-CREATE returns the corresponding payment outcome.
+10b. Tripma preserves the usable checkout state and does not open the success experience.
 
 EF-4: Booking context changed
-10a. If the current booking contexts can no longer be accepted, API-BOOKING-CREATE returns a conflict outcome.
-10b. Tripma directs the visitor to the affected booking step.
+9a. If the current booking contexts can no longer be accepted, API-BOOKING-CREATE returns a conflict outcome.
+9b. Tripma directs the visitor to the affected booking step.
 
 EF-5: Booking operation fails
-12a. If the booking operation cannot be completed, Tripma presents a recoverable outcome.
-12b. No success experience is opened.
+11a. If the booking operation cannot be completed, Tripma presents a recoverable outcome.
+11b. No success experience is opened.
 
 EF-6: Request cannot be completed
-9a. If Tripma cannot complete the request because of a technical failure, it preserves the checkout form and presents a retryable error state.
+8a. If Tripma cannot complete the request because of a technical failure, it preserves the checkout form and presents a retryable error state.
 
 ### Related UI
 
@@ -130,7 +124,7 @@ API-BOOKING-CREATE; supporting account endpoint `POST /api/auth/signup`
 
 ### Notes
 
-Scope clarification: This use case covers the Tripma checkout operation that begins on the payment step and produces the confirmation context consumed by the success experience.
+Scope clarification: This use case covers payment authorization and booking completion. Account creation and saving a payment method are referenced only as separate supporting use cases.
 
 ## UML Model
 
@@ -164,8 +158,6 @@ enum SeatClass {
 
 class User <<Entity>> {
   id: UUID [1]
-  email: String [1]
-  passwordHash: String [1]
 }
 
 class Flight <<Entity>> {
@@ -274,17 +266,6 @@ class PaymentInfo <<Entity>> {
   createdAt: DateTime [1]
 }
 
-class SavedPaymentMethod <<Entity>> {
-  id: UUID [1]
-  userId: UUID [1]
-  paymentMethod: PaymentMethod [1]
-  paymentToken: String [1]
-  nameOnCard: String [0..1]
-  cardLastFour: String [0..1]
-  expireDate: Date [0..1]
-  createdAt: DateTime [1]
-}
-
 class BillingAddressInputDto <<DTO>> {
   sameAsPrimaryPassenger: Boolean [1]
   addressLine1: String [0..1]
@@ -304,18 +285,10 @@ class PaymentInputDto <<DTO>> {
   providerToken: String [0..1]
 }
 
-class AccountOptionDto <<DTO>> {
-  createAccount: Boolean [1]
-  email: String [0..1]
-  password: String [0..1]
-  savePaymentMethod: Boolean [1]
-}
-
 class MakePaymentDto <<DTO>> {
   seatSelectionContextKey: String [1]
   payment: PaymentInputDto [1]
   billingAddress: BillingAddressInputDto [1]
-  accountOption: AccountOptionDto [1]
 }
 
 class CheckoutContextDto <<DTO>> {
@@ -389,19 +362,7 @@ class MakePaymentService <<Service>> {
   isCompleteBookingGraph(bookingId: UUID, context: CheckoutContextDto): Boolean {query}
 }
 
-class AccountService <<Service>> {
-  createAccount(email: String, password: String): User
-  isAccountInputValid(email: String, password: String): Boolean {query}
-}
-
-class PasswordHasher <<Service>> {
-  hash(password: String, rounds: Integer): String
-  matches(password: String, hash: String): Boolean {query}
-  cost(hash: String): Integer {query}
-}
-
 User "1" -- "0..*" Booking : places
-User "1" -- "0..*" SavedPaymentMethod : saves
 Flight "1" -- "0..*" Seat : has
 Flight "1" -- "0..*" Booking : departing flight
 Flight "1" -- "0..*" Booking : returning flight
@@ -416,7 +377,6 @@ Booking "1" -- "1" PaymentInfo : paid through
 
 MakePaymentDto "1" *-- "1" PaymentInputDto : payment
 MakePaymentDto "1" *-- "1" BillingAddressInputDto : billing address
-MakePaymentDto "1" *-- "1" AccountOptionDto : account option
 MakePaymentDto ..> CheckoutContextDto : resolves
 BookingConfirmationDto "1" *-- "1" FlightConfirmationDto : departing flight
 BookingConfirmationDto "1" *-- "0..1" FlightConfirmationDto : returning flight
@@ -426,9 +386,6 @@ MakePaymentResponseDto "1" *-- "0..1" BookingConfirmationDto : data
 MakePaymentService ..> MakePaymentDto
 MakePaymentService ..> MakePaymentResponseDto
 MakePaymentService ..> CheckoutContextDto
-MakePaymentService ..> AccountService
-AccountService ..> User
-AccountService ..> PasswordHasher
 
 @enduml
 ~~~
@@ -575,58 +532,16 @@ post BR_PAY_010_Result:
      endif) and
     isBillingAddressValid(
       dto.billingAddress,
-      checkoutContextFor(dto.seatSelectionContextKey)) and
-    (not dto.accountOption.createAccount or
-      (currentUserId.oclIsUndefined() and
-       isAccountInputValid(
-         dto.accountOption.email,
-         dto.accountOption.password))) and
-    (not dto.accountOption.savePaymentMethod or
-      not currentUserId.oclIsUndefined() or
-      dto.accountOption.createAccount)
+      checkoutContextFor(dto.seatSelectionContextKey))
 
 
-BR-PAY-011: Optional account creation
+BR-PAY-011: Payment authorization
 context MakePaymentService::makePayment(
   dto : MakePaymentDto,
   currentUserId : UUID,
   idempotencyKey : String
 ) : MakePaymentResponseDto
-pre BR_PAY_011_AccountInput:
-  dto.accountOption.createAccount implies
-    currentUserId.oclIsUndefined() and
-    isAccountInputValid(dto.accountOption.email, dto.accountOption.password)
-post BR_PAY_011_BookingOwner:
-  result.success and dto.accountOption.createAccount implies
-    not result.data.userId.oclIsUndefined()
-
-
-BR-PAY-012: Save payment method
-context MakePaymentService::makePayment(
-  dto : MakePaymentDto,
-  currentUserId : UUID,
-  idempotencyKey : String
-) : MakePaymentResponseDto
-pre BR_PAY_012_SaveOwner:
-  dto.accountOption.savePaymentMethod implies
-    (not currentUserId.oclIsUndefined() or
-      dto.accountOption.createAccount)
-post BR_PAY_012_SavedMethod:
-  result.success and dto.accountOption.savePaymentMethod implies
-    SavedPaymentMethod.allInstances()->one(method |
-      method.userId = result.data.userId and
-      method.paymentMethod = result.data.paymentMethod and
-      not method.paymentToken.oclIsUndefined() and
-      trim(method.paymentToken) <> '')
-
-
-BR-PAY-013: Payment authorization
-context MakePaymentService::makePayment(
-  dto : MakePaymentDto,
-  currentUserId : UUID,
-  idempotencyKey : String
-) : MakePaymentResponseDto
-post BR_PAY_013_AuthorizedBeforeConfirmation:
+post BR_PAY_011_AuthorizedBeforeConfirmation:
   result.success implies
     result.data.paymentStatus = PaymentStatus::COMPLETED and
     PaymentInfo.allInstances()->one(payment |
@@ -638,50 +553,50 @@ post BR_PAY_013_AuthorizedBeforeConfirmation:
       trim(payment.providerTransactionId) <> '')
 
 
-BR-PAY-014: Current flight and seat inventory
+BR-PAY-012: Current flight and seat inventory
 context MakePaymentService::makePayment(
   dto : MakePaymentDto,
   currentUserId : UUID,
   idempotencyKey : String
 ) : MakePaymentResponseDto
-pre BR_PAY_014_Inventory:
+pre BR_PAY_012_Inventory:
   isCheckoutInventoryAvailable(
     checkoutContextFor(dto.seatSelectionContextKey)
   )
 
 
-BR-PAY-015: Baggage fee total
+BR-PAY-013: Baggage fee total
 context MakePaymentService::makePayment(
   dto : MakePaymentDto,
   currentUserId : UUID,
   idempotencyKey : String
 ) : MakePaymentResponseDto
-post BR_PAY_015_BaggageFees:
+post BR_PAY_013_BaggageFees:
   result.success implies
     result.data.baggageFees = baggageFeeTotal(
       checkoutContextFor(dto.seatSelectionContextKey)
     )
 
 
-BR-PAY-016: Upgrade fee total
+BR-PAY-014: Upgrade fee total
 context MakePaymentService::makePayment(
   dto : MakePaymentDto,
   currentUserId : UUID,
   idempotencyKey : String
 ) : MakePaymentResponseDto
-post BR_PAY_016_UpgradeFees:
+post BR_PAY_014_UpgradeFees:
   result.success implies
     result.data.upgradeFees =
       checkoutContextFor(dto.seatSelectionContextKey).totalUpgradeAmount
 
 
-BR-PAY-017: Booking total
+BR-PAY-015: Booking total
 context MakePaymentService::makePayment(
   dto : MakePaymentDto,
   currentUserId : UUID,
   idempotencyKey : String
 ) : MakePaymentResponseDto
-post BR_PAY_017_Total:
+post BR_PAY_015_Total:
   result.success implies
     result.data.total = result.data.flightSubtotal +
       result.data.taxesAndFees +
@@ -689,15 +604,15 @@ post BR_PAY_017_Total:
       result.data.upgradeFees
 
 
-BR-PAY-018: Atomic and idempotent booking creation
+BR-PAY-016: Atomic and idempotent booking creation
 context MakePaymentService::makePayment(
   dto : MakePaymentDto,
   currentUserId : UUID,
   idempotencyKey : String
 ) : MakePaymentResponseDto
-pre BR_PAY_018_IdempotencyKey:
+pre BR_PAY_016_IdempotencyKey:
   not idempotencyKey.oclIsUndefined() and trim(idempotencyKey) <> ''
-post BR_PAY_018_BookingGraph:
+post BR_PAY_016_BookingGraph:
   result.success implies
     isCompleteBookingGraph(
       result.data.bookingId,
@@ -708,13 +623,13 @@ Technical constraints:
 - Repeating a request with the same idempotency key returns the original outcome and must not create another charge or booking.
 
 
-BR-PAY-019: Booking confirmation
+BR-PAY-017: Booking confirmation
 context MakePaymentService::makePayment(
   dto : MakePaymentDto,
   currentUserId : UUID,
   idempotencyKey : String
 ) : MakePaymentResponseDto
-post BR_PAY_019_Confirmation:
+post BR_PAY_017_Confirmation:
   result.success implies
     result.data.status = BookingStatus::CONFIRMED and
     result.data.confirmationCode.size() = 12 and
@@ -725,14 +640,13 @@ post BR_PAY_019_Confirmation:
     not result.data.createdAt.oclIsUndefined()
 
 
-BR-PAY-020: Sensitive payment-data handling
-Raw card numbers and security codes shall not be stored in Booking,
-PaymentInfo, or SavedPaymentMethod records and shall not be returned by
+BR-PAY-018: Sensitive payment-data handling
+Raw card numbers and security codes shall not be stored in Booking or
+PaymentInfo records and shall not be returned by
 API-BOOKING-CREATE.
 Technical constraints:
 - Raw card data and security codes must not be written to application logs, analytics, URLs or query strings.
 - Provider tokens must be encrypted at rest and excluded from default ORM selection and API responses.
 - A security code is used only for the immediate authorization attempt and is discarded afterward.
-- Account passwords must be hashed by the account service and must not be logged or persisted in plaintext.
 
 ~~~
