@@ -391,12 +391,16 @@ context FlightSelectionService::summarize(
 ) : FlightSelectionSummaryDto
 post BR_SELECT_010_Subtotal:
   result.subtotalAmount =
-    subtotalOf(state.selectedDepartingFlight) +
-    subtotalOf(state.selectedReturningFlight)
+    (if state.selectedDepartingFlight.oclIsUndefined() then 0
+     else state.selectedDepartingFlight.subtotalPrice endif) +
+    (if state.selectedReturningFlight.oclIsUndefined() then 0
+     else state.selectedReturningFlight.subtotalPrice endif)
 post BR_SELECT_010_TaxesAndFees:
   result.taxesAndFeesAmount =
-    taxesAndFeesOf(state.selectedDepartingFlight) +
-    taxesAndFeesOf(state.selectedReturningFlight)
+    (if state.selectedDepartingFlight.oclIsUndefined() then 0
+     else state.selectedDepartingFlight.taxesAndFees endif) +
+    (if state.selectedReturningFlight.oclIsUndefined() then 0
+     else state.selectedReturningFlight.taxesAndFees endif)
 post BR_SELECT_010_Total:
   result.totalAmount = result.subtotalAmount + result.taxesAndFeesAmount
 
@@ -423,8 +427,12 @@ post BR_SELECT_012_SavedIdentity:
   result.type = state.searchParams.type and
   not result.savedAt.oclIsUndefined()
 post BR_SELECT_012_SavedFlightIdentifiers:
-  result.departingFlightId = flightIdOf(state.selectedDepartingFlight) and
-  result.returningFlightId = flightIdOf(state.selectedReturningFlight)
+  result.departingFlightId =
+    if state.selectedDepartingFlight.oclIsUndefined() then null
+    else state.selectedDepartingFlight.flightId endif and
+  result.returningFlightId =
+    if state.selectedReturningFlight.oclIsUndefined() then null
+    else state.selectedReturningFlight.flightId endif
 
 
 BR-SELECT-013: Saved selection matches the current search
@@ -476,9 +484,13 @@ context FlightSelectionService::restoreSelection(
 ) : FlightBookingState
 post BR_SELECT_016_RestoredSelection:
   result.selectedDepartingFlight =
-    flightById(state.departingOptions, saved.departingFlightId) and
+    if saved.departingFlightId.oclIsUndefined() then null
+    else state.departingOptions->any(flight |
+      flight.flightId = saved.departingFlightId) endif and
   result.selectedReturningFlight =
-    flightById(state.returningOptions, saved.returningFlightId) and
+    if saved.returningFlightId.oclIsUndefined() then null
+    else state.returningOptions->any(flight |
+      flight.flightId = saved.returningFlightId) endif and
   result.searchContextKey = state.searchContextKey and
   result.searchParams = state.searchParams and
   result.currency = state.currency

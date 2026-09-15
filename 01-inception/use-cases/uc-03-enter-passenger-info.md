@@ -285,6 +285,8 @@ class PassengerInformationService <<Service>> {
   prepare(tripContext: PassengerTripContextDto, form: PassengerFormDto): PreparedPassengerContextDto
   saveForm(tripContext: PassengerTripContextDto, form: PassengerFormDto): SavedPassengerFormDto
   restoreForm(tripContext: PassengerTripContextDto, saved: SavedPassengerFormDto): PassengerFormDto
+  normalizePassengers(passengers: PassengerInputDto [1..*]): PassengerInputDto [1..*] {query}
+  emergencyContactOf(form: PassengerFormDto): EmergencyContactInputDto {query}
 }
 
 Booking "1" -- "1..*" PassengerInfo : contains
@@ -475,7 +477,24 @@ context PassengerInformationService::prepare(
   form : PassengerFormDto
 ) : PreparedPassengerContextDto
 pre BR_PASS_009_ContactSource:
-  isEmergencyContactValid(form)
+  if form.emergencyContact.usePrimaryPassenger then
+    let primary : PassengerInputDto = form.passengers->any(passenger |
+      passenger.passengerRef = form.primaryPassengerRef)
+    in
+      not primary.email.oclIsUndefined() and
+      isEmail(lower(trim(primary.email))) and
+      not primary.phone.oclIsUndefined() and
+      isPhone(trim(primary.phone))
+  else
+    not form.emergencyContact.firstName.oclIsUndefined() and
+    trim(form.emergencyContact.firstName) <> '' and
+    not form.emergencyContact.lastName.oclIsUndefined() and
+    trim(form.emergencyContact.lastName) <> '' and
+    not form.emergencyContact.email.oclIsUndefined() and
+    isEmail(lower(trim(form.emergencyContact.email))) and
+    not form.emergencyContact.phone.oclIsUndefined() and
+    isPhone(trim(form.emergencyContact.phone))
+  endif
 
 
 BR-PASS-010: One baggage entry per passenger

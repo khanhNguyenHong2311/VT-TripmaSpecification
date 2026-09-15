@@ -232,6 +232,8 @@ class SearchResponseDto <<DTO>> {
 
 class FlightService <<Service>> {
   search(dto: SearchDto): SearchResponseDto
+  priceGridMinimum(search: SearchDto, gridItem: PriceGridDto): Decimal {query}
+  priceRatingFor(flights: FlightDto [0..*], priceHistory: PriceHistoryDto [0..*]): PriceRatingDto {query}
 }
 
 class FlightFilterService <<Service>> {
@@ -447,7 +449,19 @@ context FlightService::search(
 ) : SearchResponseDto
 post BR_SEARCH_015_PriceGridBounds:
   result.priceGrid->forAll(gridItem |
-    isPriceGridDateEligible(dto, gridItem)
+    gridItem.departingDate >= dto.startDate - 3_DAYS and
+    gridItem.departingDate <= dto.startDate + 3_DAYS and
+    gridItem.departingDate >= todayIn(timeZoneForCity(dto.fromCity)) and
+    gridItem.departingDate <= todayIn(timeZoneForCity(dto.fromCity)) + 330_DAYS and
+    if dto.type = true then
+      not gridItem.returningDate.oclIsUndefined() and
+      gridItem.returningDate >= dto.endDate - 3_DAYS and
+      gridItem.returningDate <= dto.endDate + 3_DAYS and
+      gridItem.returningDate >= gridItem.departingDate and
+      gridItem.returningDate <= todayIn(timeZoneForCity(dto.fromCity)) + 330_DAYS
+    else
+      gridItem.returningDate.oclIsUndefined()
+    endif
   )
 
 
@@ -498,9 +512,10 @@ context FlightService::search(
 post BR_SEARCH_019_OnePointPerRecordedDate:
   result.priceHistory->isUnique(historyItem | historyItem.recordedDate)
 post BR_SEARCH_019_ChronologicalOrder:
-  isStrictlyAscending(
-    result.priceHistory->collect(item | item.recordedDate)
-  )
+  result.priceHistory->size() <= 1 or
+  Sequence{1..result.priceHistory->size() - 1}->forAll(index |
+    result.priceHistory->at(index).recordedDate <
+      result.priceHistory->at(index + 1).recordedDate)
 
 
 BR-SEARCH-020: Fare history and price rating
@@ -509,7 +524,20 @@ context FlightService::search(
 ) : SearchResponseDto
 post BR_SEARCH_020_DailyAverage:
   result.priceHistory->forAll(item |
-    item.averagePrice = routePriceAverage(dto, item.recordedDate)
+    let observations : Set(RoutePriceHistory) =
+      RoutePriceHistory.allInstances()->select(observation |
+        lower(trim(observation.fromCity)) = lower(trim(dto.fromCity)) and
+        lower(trim(observation.toCity)) = lower(trim(dto.toCity)) and
+        observation.currency = result.currency and
+        localDate(
+          observation.recordedAt,
+          timeZoneForCity(dto.fromCity)
+        ) = item.recordedDate)
+    in
+      not observations->isEmpty() and
+      item.averagePrice =
+        observations->collect(observation | observation.price)->sum() /
+        observations->size()
   )
 post BR_SEARCH_020_PriceRating:
   result.priceRating = priceRatingFor(

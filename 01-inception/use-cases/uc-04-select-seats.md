@@ -272,6 +272,7 @@ class SavedSeatSelectionDto <<DTO>> {
 
 class SeatService <<Service>> {
   listAvailableSeats(flightId: UUID): SeatListResponseDto
+  isSeatNumberAscending(seats: SeatDto [0..*]): Boolean {query}
 }
 
 class SeatSelectionService <<Service>> {
@@ -282,6 +283,7 @@ class SeatSelectionService <<Service>> {
   createContext(state: SeatSelectionState): SeatSelectionContextDto
   saveSelection(state: SeatSelectionState): SavedSeatSelectionDto
   restoreSelection(state: SeatSelectionState, saved: SavedSeatSelectionDto): SeatSelectionState
+  hasCompleteSeatCoverage(state: SeatSelectionState): Boolean {query}
 }
 
 Flight "1" -- "0..*" Seat : has
@@ -363,7 +365,14 @@ context SeatSelectionService::selectSeat(
   seat : SeatDto
 ) : SeatSelectionState
 post BR_SEAT_005_SingleChoice:
-  not requiresUpgradeConfirmation(state, passengerRef, seat) implies
+  not (
+    seat.seatClass = SeatClass::BUSINESS and
+    state.choices->exists(choice |
+      choice.passengerRef = passengerRef and
+      choice.flightId = seat.flightId and
+      choice.seat.seatClass = SeatClass::ECONOMY and
+      choice.seat.id <> seat.id)
+  ) implies
     result.choices->one(choice |
       choice.passengerRef = passengerRef and
       choice.flightId = seat.flightId)
@@ -388,7 +397,12 @@ context SeatSelectionService::selectSeat(
   seat : SeatDto
 ) : SeatSelectionState
 post BR_SEAT_007_UpgradePending:
-  requiresUpgradeConfirmation(state, passengerRef, seat) implies
+  (seat.seatClass = SeatClass::BUSINESS and
+   state.choices->exists(choice |
+     choice.passengerRef = passengerRef and
+     choice.flightId = seat.flightId and
+     choice.seat.seatClass = SeatClass::ECONOMY and
+     choice.seat.id <> seat.id)) implies
     not result.pendingUpgrade.oclIsUndefined() and
     result.pendingUpgrade.passengerRef = passengerRef and
     result.pendingUpgrade.flightId = seat.flightId and
@@ -404,9 +418,17 @@ context SeatSelectionService::selectSeat(
   seat : SeatDto
 ) : SeatSelectionState
 post BR_SEAT_008_ImmediateSelection:
-  not requiresUpgradeConfirmation(state, passengerRef, seat) implies
-    let choice : SeatChoiceDto =
-      seatFor(result.choices, passengerRef, seat.flightId)
+  not (
+    seat.seatClass = SeatClass::BUSINESS and
+    state.choices->exists(choice |
+      choice.passengerRef = passengerRef and
+      choice.flightId = seat.flightId and
+      choice.seat.seatClass = SeatClass::ECONOMY and
+      choice.seat.id <> seat.id)
+  ) implies
+    let choice : SeatChoiceDto = result.choices->any(item |
+      item.passengerRef = passengerRef and
+      item.flightId = seat.flightId)
     in
       choice.flightLeg = flightLeg and
       choice.seat = seat
@@ -420,10 +442,21 @@ context SeatSelectionService::selectSeat(
   seat : SeatDto
 ) : SeatSelectionState
 post BR_SEAT_009_UpgradeAmount:
-  requiresUpgradeConfirmation(state, passengerRef, seat) implies
-    result.pendingUpgrade.upgradeAmount =
-      businessUpgradeAmount(state, passengerRef, seat) and
-    result.pendingUpgrade.currency = seat.currency
+  (seat.seatClass = SeatClass::BUSINESS and
+   state.choices->exists(choice |
+     choice.passengerRef = passengerRef and
+     choice.flightId = seat.flightId and
+     choice.seat.seatClass = SeatClass::ECONOMY and
+     choice.seat.id <> seat.id)) implies
+    let currentChoice : SeatChoiceDto = state.choices->any(choice |
+      choice.passengerRef = passengerRef and
+      choice.flightId = seat.flightId)
+    in
+      result.pendingUpgrade.upgradeAmount =
+        if seat.price > currentChoice.seat.price then
+          seat.price - currentChoice.seat.price
+        else 0 endif and
+      result.pendingUpgrade.currency = seat.currency
 
 
 BR-SEAT-010: Confirm a pending upgrade
@@ -433,17 +466,13 @@ context SeatSelectionService::confirmUpgrade(
 pre BR_SEAT_010_UpgradeExists:
   not state.pendingUpgrade.oclIsUndefined()
 post BR_SEAT_010_UpgradeApplied:
-  seatFor(
-    result.choices,
-    state.pendingUpgrade.passengerRef,
-    state.pendingUpgrade.flightId
-  ).seat = state.pendingUpgrade.requestedSeat and
-  seatFor(
-    result.choices,
-    state.pendingUpgrade.passengerRef,
-    state.pendingUpgrade.flightId
-  ).upgradeAmount = state.pendingUpgrade.upgradeAmount and
-  result.pendingUpgrade.oclIsUndefined()
+  let upgradedChoice : SeatChoiceDto = result.choices->any(choice |
+    choice.passengerRef = state.pendingUpgrade.passengerRef and
+    choice.flightId = state.pendingUpgrade.flightId)
+  in
+    upgradedChoice.seat = state.pendingUpgrade.requestedSeat and
+    upgradedChoice.upgradeAmount = state.pendingUpgrade.upgradeAmount and
+    result.pendingUpgrade.oclIsUndefined()
 
 
 BR-SEAT-011: Cancel a pending upgrade
@@ -471,7 +500,10 @@ context SeatSelectionService::createContext(
 ) : SeatSelectionContextDto
 pre BR_SEAT_013_CurrentAvailability:
   state.choices->forAll(choice |
-    isSeatAvailable(state.availableSeats, choice.seat)
+    state.availableSeats->exists(seatList |
+      seatList.flightId = choice.flightId and
+      (seatList.businessSeats->union(seatList.economySeats))->exists(seat |
+        seat.id = choice.seat.id and seat.available = true))
   )
 Technical constraints:
 - Seat information must be refreshed before this precondition is evaluated; an earlier list response is not treated as a reservation.
@@ -489,7 +521,8 @@ post BR_SEAT_014_Context:
   result.passengerContextKey = state.inputContext.passengerContextKey and
   result.selectionContextKey = state.inputContext.selectionContextKey and
   result.choices = state.choices and
-  result.totalUpgradeAmount = totalUpgradeAmount(state.choices) and
+  result.totalUpgradeAmount =
+    state.choices->collect(choice | choice.upgradeAmount)->sum() and
   result.currency = state.inputContext.currency and
   not result.preparedAt.oclIsUndefined()
 
@@ -513,7 +546,10 @@ pre BR_SEAT_016_CurrentPassengerContext:
   saved.passengerContextKey = state.inputContext.passengerContextKey
 post BR_SEAT_016_RestoredChoices:
   result.choices = saved.choices->select(choice |
-    isSeatAvailable(state.availableSeats, choice.seat)
+    state.availableSeats->exists(seatList |
+      seatList.flightId = choice.flightId and
+      (seatList.businessSeats->union(seatList.economySeats))->exists(seat |
+        seat.id = choice.seat.id and seat.available = true))
   ) and
   result.pendingUpgrade.oclIsUndefined()
 Technical constraints:
@@ -545,6 +581,16 @@ context SeatSelectionService::selectSeat(
   seat : SeatDto
 ) : SeatSelectionState
 pre BR_SEAT_019_EligibleChoice:
-  isSeatEligibleFor(state, passengerRef, flightLeg, seat)
+  state.inputContext.passengerRefs->includes(passengerRef) and
+  (if flightLeg = FlightLeg::DEPARTING then
+     seat.flightId = state.inputContext.departingFlightId
+   else
+     not state.inputContext.returningFlightId.oclIsUndefined() and
+     seat.flightId = state.inputContext.returningFlightId
+   endif) and
+  state.availableSeats->exists(seatList |
+    seatList.flightId = seat.flightId and
+    (seatList.businessSeats->union(seatList.economySeats))->exists(candidate |
+      candidate.id = seat.id and candidate.available = true))
 
 ~~~
