@@ -294,26 +294,14 @@ context FlightService::search(
   dto : SearchDto
 ) : SearchResponseDto
 post BR_SEARCH_003_DepartingDateRange:
-  let zone : TimeZone = CityTimeZoneResolver.forCity(dto.fromCity),
-      dayStart : DateTime = DateTimeUtility.startOfDay(dto.startDate, zone),
-      nextDayStart : DateTime = DateTimeUtility.startOfNextDay(dto.startDate, zone)
-  in
-    result.departingFlights->forAll(flight |
-      flight.date >= dayStart and flight.date < nextDayStart
-    )
+  result.departingFlights->forAll(flight |
+    isOnLocalDate(flight.date, dto.startDate, dto.fromCity)
+  )
 post BR_SEARCH_003_ReturningDateRange:
   dto.type = true implies
-    let zone : TimeZone = CityTimeZoneResolver.forCity(dto.toCity),
-        dayStart : DateTime = DateTimeUtility.startOfDay(dto.endDate, zone),
-        nextDayStart : DateTime = DateTimeUtility.startOfNextDay(dto.endDate, zone)
-    in
-      result.arrivingFlights->forAll(flight |
-        flight.date >= dayStart and flight.date < nextDayStart
-      )
-Technical constraints:
-- Tripma must resolve calendar-day boundaries through the canonical city time-zone catalogue; it must not approximate a local day with a fixed 24-hour UTC duration.
-
-
+    result.arrivingFlights->forAll(flight |
+      isOnLocalDate(flight.date, dto.endDate, dto.toCity)
+    )
 BR-SEARCH-004: Round-trip requirements
 context FlightService::search(
   dto : SearchDto
@@ -344,7 +332,7 @@ post BR_SEARCH_005_ReversedCities:
     lower(trim(arrivingFlight.fromCity)) = lower(trim(dto.toCity)) and
     lower(trim(arrivingFlight.toCity)) = lower(trim(dto.fromCity))
   )
-Technical constraint:
+Non-OCL requirement:
 - The response must not silently omit a flight that satisfies every applicable eligibility rule for its leg.
 
 
@@ -360,10 +348,8 @@ pre BR_SEARCH_006_RequiredInput:
   not dto.minors.oclIsUndefined() and
   not dto.type.oclIsUndefined()
 pre BR_SEARCH_006_SupportedCities:
-  CityCatalogue.includes(dto.fromCity) and
-  CityCatalogue.includes(dto.toCity)
-Technical constraint: 
-- City membership and time-zone resolution must use the same canonical Tripma city catalogue; a rejected request maps to HTTP 400 before the search executes.
+  isSupportedCity(dto.fromCity) and
+  isSupportedCity(dto.toCity)
 
 
 BR-SEARCH-007: Distinct origin and destination
@@ -379,9 +365,11 @@ context FlightService::search(
   dto : SearchDto
 ) : SearchResponseDto
 pre BR_SEARCH_008_NoPastFlights:
-  dto.startDate >= DateTimeUtility.todayIn(
-    CityTimeZoneResolver.forCity(dto.fromCity)
+  dto.startDate >= todayIn(
+    timeZoneForCity(dto.fromCity)
   )
+
+
 BR-SEARCH-009: Valid date sequence for round trips
 context FlightService::search(
   dto : SearchDto
@@ -397,6 +385,8 @@ context FlightService::search(
 ) : SearchResponseDto
 pre BR_SEARCH_010_AdultRequiredForMinors:
   dto.minors > 0 implies dto.adults >= 1
+
+
 BR-SEARCH-011: Maximum passenger limit
 context FlightService::search(
   dto : SearchDto
@@ -405,8 +395,6 @@ pre BR_SEARCH_011_PassengerCap:
   let totalPassengers : Integer = dto.adults + dto.minors
   in
     totalPassengers <= 9
-Technical constraints:
-- The frontend disables further passenger increments when the OCL limit has been reached.
 
 
 BR-SEARCH-012: Advance booking horizon
@@ -414,16 +402,14 @@ context FlightService::search(
   dto : SearchDto
 ) : SearchResponseDto
 pre BR_SEARCH_012_MaxFutureStartDate:
-  dto.startDate <= DateTimeUtility.todayIn(
-    CityTimeZoneResolver.forCity(dto.fromCity)
+  dto.startDate <= todayIn(
+    timeZoneForCity(dto.fromCity)
   ) + 330_DAYS
 pre BR_SEARCH_012_MaxFutureEndDate:
   dto.type = true implies
-    dto.endDate <= DateTimeUtility.todayIn(
-      CityTimeZoneResolver.forCity(dto.fromCity)
+    dto.endDate <= todayIn(
+      timeZoneForCity(dto.fromCity)
     ) + 330_DAYS
-Technical constraints:
-- The calendar disables dates outside the OCL booking horizon.
 
 
 BR-SEARCH-013: Price grid matrix calculation
@@ -431,8 +417,8 @@ context FlightService::search(
   dto : SearchDto
 ) : SearchResponseDto
 post BR_SEARCH_013_PriceGridBounds:
-  let today : Date = DateTimeUtility.todayIn(
-        CityTimeZoneResolver.forCity(dto.fromCity)
+  let today : Date = todayIn(
+        timeZoneForCity(dto.fromCity)
       ),
       horizon : Date = today + 330_DAYS
   in
@@ -458,7 +444,7 @@ post BR_SEARCH_013_UniqueGridCoordinates:
       returningDate : Date = gridItem.returningDate
     }
   )
-Technical constraints:
+Non-OCL requirements:
 - A grid coordinate is present exactly once only when the required eligible flight option or pair exists.
 - `minPrice` is the minimum eligible outbound subtotal for one-way searches and the minimum eligible outbound-plus-return subtotal for round-trip searches.
 
@@ -468,8 +454,8 @@ context FlightService::search(
   dto : SearchDto
 ) : SearchResponseDto
 post BR_SEARCH_014_HistoryBounds:
-  let today : Date = DateTimeUtility.todayIn(
-        CityTimeZoneResolver.forCity(dto.fromCity)
+  let today : Date = todayIn(
+        timeZoneForCity(dto.fromCity)
       )
   in
     result.priceHistory->forAll(historyItem |
@@ -479,12 +465,10 @@ post BR_SEARCH_014_HistoryBounds:
 post BR_SEARCH_014_OnePointPerRecordedDate:
   result.priceHistory->isUnique(historyItem | historyItem.recordedDate)
 post BR_SEARCH_014_ChronologicalOrder:
-  result.priceHistory->size() <= 1 or
-  Sequence{1..result.priceHistory->size()-1}->forAll(i |
-    result.priceHistory->at(i).recordedDate <
-    result.priceHistory->at(i + 1).recordedDate
+  isStrictlyAscending(
+    result.priceHistory->collect(item | item.recordedDate)
   )
-Technical constraints:
+Non-OCL requirements:
 - Each represented local date contains the arithmetic mean of its stored fare observations for the normalized outbound route.
 - A date without an observation is omitted rather than represented by a fabricated zero value.
 
@@ -514,9 +498,9 @@ post BR_SEARCH_016_AllActiveFiltersMatch:
     (filter.maxTotalPrice.oclIsUndefined() or
       flight.subtotalPrice + flight.taxesAndFees <= filter.maxTotalPrice) and
     (filter.departureTimeBand.oclIsUndefined() or
-      DateTimeUtility.timeBandIn(
+      timeBandIn(
         flight.date,
-        CityTimeZoneResolver.forCity(flight.fromCity)
+        timeZoneForCity(flight.fromCity)
       ) = filter.departureTimeBand) and
     (filter.airlines->isEmpty() or
       filter.airlines->exists(airline |
@@ -524,7 +508,6 @@ post BR_SEARCH_016_AllActiveFiltersMatch:
       ))
   )
 Technical constraints:
-- `MORNING` covers local departure times from 00:00 inclusive to 12:00 exclusive; `AFTERNOON` covers 12:00 inclusive to 18:00 exclusive; `EVENING` covers 18:00 inclusive to the next 00:00.
 - Filtering preserves the input order and does not mutate the original search response; clearing filters restores that response order.
 
 ~~~
