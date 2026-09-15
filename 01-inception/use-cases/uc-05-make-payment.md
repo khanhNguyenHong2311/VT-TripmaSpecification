@@ -73,8 +73,8 @@ AF-1: Return to seat selection
 
 AF-2: Create an account during checkout
 3a. The visitor chooses the account-creation option exposed by the payment experience.
-3b. Tripma invokes the separate Create Account use case.
-3c. When that use case succeeds, the Basic Flow resumes at step 3.
+3b. Tripma invokes UC-07 — Sign Up.
+3c. When UC-07 succeeds, the Basic Flow resumes at step 3.
 
 AF-3: Save the payment method
 3d. The visitor chooses the saved-payment option exposed by the payment experience.
@@ -120,11 +120,11 @@ Payment step of the booking page (`/booking`); payment-method selector; credit-c
 
 ### Related API IDs
 
-API-BOOKING-CREATE; supporting account endpoint `POST /api/auth/signup`
+API-BOOKING-CREATE; API-AUTH-SIGNUP through UC-07
 
 ### Notes
 
-Scope clarification: This use case covers payment authorization and booking completion. Account creation and saving a payment method are referenced only as separate supporting use cases.
+Scope clarification: This use case covers payment authorization and booking completion. UC-07 and the separate Save Payment Method use case are referenced only as supporting use cases.
 
 ## UML Model
 

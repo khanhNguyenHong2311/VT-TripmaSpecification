@@ -672,4 +672,4 @@ Example: true
 
 ## Notes
 
-API-BOOKING-CREATE consumes the context chain prepared by UC-02, UC-03 and UC-04. Supporting account and saved-payment use cases remain separate from this contract.
+API-BOOKING-CREATE consumes the context chain prepared by UC-02, UC-03 and UC-04. UC-07 and the supporting saved-payment use case remain separate from this contract.
