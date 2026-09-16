@@ -253,6 +253,15 @@ Trigger: API-BOOKING-CREATE response.
 Description: Human-readable Tripma response detail.
 Example: "Tripma checkout completed"
 
+### data
+
+Type: object
+Required: Yes
+Nullable: No
+Trigger: Successful API-BOOKING-CREATE response.
+Description: Tripma booking-confirmation data object.
+Example: {}
+
 ### data.bookingId
 
 Type: string; Format: UUID

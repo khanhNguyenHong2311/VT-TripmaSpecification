@@ -95,18 +95,11 @@ Scope clarification: UC-08 authenticates an existing Tripma account and establis
 ~~~plantuml
 @startuml
 
-enum SignInOutcome {
-  AUTHENTICATED
-  INVALID_INPUT
-  INVALID_CREDENTIALS
-  TECHNICAL_FAILURE
-}
-
 class User <<Entity>> {
   id: UUID [1]
   email: String [1]
-  passwordHash: String [0..1]
-  username: String [0..1]
+  passwordHash: String [1]
+  username: String [1]
 }
 
 class SignInDto <<DTO>> {
@@ -117,19 +110,18 @@ class SignInDto <<DTO>> {
 class AuthenticatedUserDto <<DTO>> {
   id: UUID [1]
   email: String [1]
-  username: String [0..1]
+  username: String [1]
 }
 
 class JwtClaimsDto <<DTO>> {
   userId: UUID [1]
   email: String [1]
-  username: String [0..1]
+  username: String [1]
   issuedAt: DateTime [1]
   expiresAt: DateTime [1]
 }
 
 class SessionDto <<DTO>> {
-  user: AuthenticatedUserDto [1]
   expiresAt: DateTime [1]
 }
 
@@ -140,7 +132,6 @@ class SignInDataDto <<DTO>> {
 
 class SignInResponseDto <<DTO>> {
   success: Boolean [1]
-  outcome: SignInOutcome [1]
   message: String [1]
   data: SignInDataDto [0..1]
 }
@@ -159,7 +150,6 @@ class PasswordHasher <<Service>> {
 
 SignInDataDto "1" *-- "1" AuthenticatedUserDto : user
 SignInDataDto "1" *-- "1" SessionDto : session
-SessionDto "1" *-- "1" AuthenticatedUserDto : user
 SignInResponseDto "1" *-- "0..1" SignInDataDto : data
 
 SignInService ..> SignInDto
@@ -207,10 +197,10 @@ context SignInService::signIn(
   dto : SignInDto
 ) : SignInResponseDto
 post BR_SIGNIN_004_Outcome:
-  result.success = User.allInstances()->exists(user |
-    not user.passwordHash.oclIsUndefined() and
-    normalizeEmail(user.email) = normalizeEmail(dto.email) and
-    matches(dto.password, user.passwordHash))
+  result.success implies
+    User.allInstances()->exists(user |
+      normalizeEmail(user.email) = normalizeEmail(dto.email) and
+      matches(dto.password, user.passwordHash))
 
 
 BR-SIGNIN-005: Credential rejection
@@ -218,9 +208,11 @@ context SignInService::signIn(
   dto : SignInDto
 ) : SignInResponseDto
 post BR_SIGNIN_005_Rejection:
-  not result.success implies
-    result.outcome = SignInOutcome::INVALID_CREDENTIALS and
-    result.data.oclIsUndefined()
+  not User.allInstances()->exists(user |
+    normalizeEmail(user.email) = normalizeEmail(dto.email) and
+    matches(dto.password, user.passwordHash))
+  implies
+    not result.success and result.data.oclIsUndefined()
 
 
 BR-SIGNIN-006: Authenticated account identity
@@ -229,7 +221,6 @@ context SignInService::signIn(
 ) : SignInResponseDto
 post BR_SIGNIN_006_User:
   result.success implies
-    result.outcome = SignInOutcome::AUTHENTICATED and
     User.allInstances()->one(user |
       user.id = result.data.user.id and
       normalizeEmail(user.email) = normalizeEmail(dto.email))
@@ -251,9 +242,6 @@ context SignInService::createSession(
   token : JwtClaimsDto
 ) : SessionDto
 post BR_SIGNIN_008_Session:
-  result.user.id = token.userId and
-  result.user.email = token.email and
-  result.user.username = token.username and
   result.expiresAt = token.expiresAt
 
 
@@ -264,8 +252,11 @@ context SignInService::signIn(
 post BR_SIGNIN_009_Response:
   result.success implies
     not result.data.oclIsUndefined() and
-    result.data.user.id = result.data.session.user.id and
-    result.data.user.email = result.data.session.user.email
+    not result.data.session.expiresAt.oclIsUndefined() and
+    User.allInstances()->one(user |
+      user.id = result.data.user.id and
+      user.email = result.data.user.email and
+      user.username = result.data.user.username)
 
 
 BR-SIGNIN-010: Sensitive authentication data

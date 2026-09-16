@@ -74,12 +74,14 @@ AF-1: Return to seat selection
 AF-2: Create an account during checkout
 3a. The visitor chooses the account-creation option exposed by the payment experience.
 3b. Tripma invokes UC-07 — Sign Up.
-3c. When UC-07 succeeds, the Basic Flow resumes at step 3.
+3c. When UC-07 succeeds, Tripma invokes UC-08 — Sign In for the new account.
+3d. When UC-08 succeeds, the authenticated checkout context is restored.
+3e. The Basic Flow resumes at step 3.
 
 AF-3: Save the payment method
-3d. The visitor chooses the saved-payment option exposed by the payment experience.
-3e. Tripma invokes the separate Save Payment Method use case at the applicable checkout point.
-3f. When that use case succeeds, UC-05 resumes without redefining its internal behavior.
+3f. The visitor chooses the saved-payment option exposed by the payment experience.
+3g. Tripma invokes the separate Save Payment Method use case at the applicable checkout point.
+3h. When that use case succeeds, UC-05 resumes without redefining its internal behavior.
 
 AF-4: Use another payment path
 3a. The visitor chooses another payment path offered by Tripma.
@@ -116,15 +118,15 @@ EF-6: Request cannot be completed
 
 ### Related UI
 
-Payment step of the booking page (`/booking`); payment-method selector; credit-card form; billing-address option; account-creation area; saved-payment option; cancellation-policy information; processing popup; Confirm and pay action; booking-success page
+Tripma payment experience in the booking workflow
 
 ### Related API IDs
 
-API-BOOKING-CREATE; API-AUTH-SIGNUP through UC-07
+API-BOOKING-CREATE; API-AUTH-SIGNUP through UC-07; API-AUTH-SIGNIN through UC-08
 
 ### Notes
 
-Scope clarification: This use case covers payment authorization and booking completion. UC-07 and the separate Save Payment Method use case are referenced only as supporting use cases.
+Scope clarification: This use case covers payment authorization and booking completion. UC-07, UC-08, and the separate Save Payment Method use case are referenced only as supporting use cases.
 
 ## UML Model
 
@@ -339,15 +341,15 @@ class MakePaymentService <<Service>> {
   isCompleteBookingGraph(bookingId: UUID, context: CheckoutContextDto): Boolean {query}
 }
 
-User "1" -- "0..*" Booking : places
+User "0..1" -- "0..*" Booking : places
 Flight "1" -- "0..*" Seat : has
 Flight "1" -- "0..*" Booking : departing flight
-Flight "1" -- "0..*" Booking : returning flight
+Flight "0..1" -- "0..*" Booking : returning flight
 Booking "1" -- "1..*" PassengerInfo : contains
 Booking "1" -- "1" EmergencyContact : uses
 PassengerInfo "1" -- "1..*" PassengerBaggage : has
 PassengerInfo "1" -- "1..*" SeatAssignment : receives
-Seat "1" -- "0..*" SeatAssignment : assigned through
+Seat "1" -- "0..1" SeatAssignment : assigned through
 Flight "1" -- "0..*" PassengerBaggage : applies to
 Flight "1" -- "0..*" SeatAssignment : applies to
 Booking "1" -- "1" PaymentInfo : paid through

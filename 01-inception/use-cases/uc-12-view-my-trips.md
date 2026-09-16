@@ -174,16 +174,16 @@ class MyTripsService <<Service>> {
   listMyTrips(currentUserId: UUID): MyTripsResponseDto
 }
 
-User "1" -- "0..*" Booking : owns
-Booking "1" -- "1" Flight : departing flight
-Booking "0..1" -- "1" Flight : returning flight
+User "0..1" -- "0..*" Booking : owns
+Booking "0..*" -- "1" Flight : departing flight
+Booking "0..*" -- "0..1" Flight : returning flight
 Booking "1" -- "1..*" PassengerInfo : contains
 
 MyTripSummaryDto "1" *-- "1" MyTripFlightDto : departing flight
 MyTripSummaryDto "1" *-- "0..1" MyTripFlightDto : returning flight
 MyTripsDataDto "1" *-- "0..*" MyTripSummaryDto : upcoming trips
 MyTripsDataDto "1" *-- "0..*" MyTripSummaryDto : completed trips
-MyTripsResponseDto "1" *-- "1" MyTripsDataDto : data
+MyTripsResponseDto "1" *-- "0..1" MyTripsDataDto : data
 
 MyTripsService ..> MyTripsResponseDto
 MyTripsService ..> User

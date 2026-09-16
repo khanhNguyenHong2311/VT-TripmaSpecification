@@ -183,11 +183,17 @@ class SeatDto <<DTO>> {
   currency: String [1]
 }
 
-class SeatListResponseDto <<DTO>> {
+class SeatListDataDto <<DTO>> {
   flightId: UUID [1]
   currency: String [1]
   businessSeats: SeatDto [0..*]
   economySeats: SeatDto [0..*]
+}
+
+class SeatListResponseDto <<DTO>> {
+  success: Boolean [1]
+  message: String [1]
+  data: SeatListDataDto [0..1]
 }
 
 class SeatSelectionInputContextDto <<DTO>> {
@@ -219,7 +225,7 @@ class PendingSeatUpgradeDto <<DTO>> {
 
 class SeatSelectionState <<State>> {
   inputContext: SeatSelectionInputContextDto [1]
-  availableSeats: SeatListResponseDto [1..*]
+  availableSeats: SeatListDataDto [1..*]
   choices: SeatChoiceDto [0..*]
   pendingUpgrade: PendingSeatUpgradeDto [0..1]
 }
@@ -259,15 +265,16 @@ class SeatSelectionService <<Service>> {
 Flight "1" -- "0..*" Seat : has
 PassengerInfo "1" -- "0..*" SeatAssignment : receives
 Flight "1" -- "0..*" SeatAssignment : applies to
-Seat "1" -- "0..*" SeatAssignment : references
+Seat "1" -- "0..1" SeatAssignment : references
 
-SeatListResponseDto "1" *-- "0..*" SeatDto : business seats
-SeatListResponseDto "1" *-- "0..*" SeatDto : economy seats
+SeatListDataDto "1" *-- "0..*" SeatDto : business seats
+SeatListDataDto "1" *-- "0..*" SeatDto : economy seats
+SeatListResponseDto "1" *-- "0..1" SeatListDataDto : data
 SeatChoiceDto "1" *-- "1" SeatDto : selected seat
 PendingSeatUpgradeDto "1" *-- "0..1" SeatDto : previous seat
 PendingSeatUpgradeDto "1" *-- "1" SeatDto : requested seat
 SeatSelectionState "1" *-- "1" SeatSelectionInputContextDto : uses
-SeatSelectionState "1" *-- "1..*" SeatListResponseDto : presents
+SeatSelectionState "1" *-- "1..*" SeatListDataDto : presents
 SeatSelectionState "1" *-- "0..*" SeatChoiceDto : contains
 SeatSelectionState "1" *-- "0..1" PendingSeatUpgradeDto : proposes
 SeatSelectionContextDto "1" *-- "1..*" SeatChoiceDto : contains
@@ -293,9 +300,10 @@ context SeatService::listAvailableSeats(
   flightId : UUID
 ) : SeatListResponseDto
 post BR_SEAT_001_RequestedFlight:
-  result.flightId = flightId and
-  result.businessSeats->forAll(seat | seat.flightId = flightId) and
-  result.economySeats->forAll(seat | seat.flightId = flightId)
+  result.success implies
+    result.data.flightId = flightId and
+    result.data.businessSeats->forAll(seat | seat.flightId = flightId) and
+    result.data.economySeats->forAll(seat | seat.flightId = flightId)
 
 
 BR-SEAT-002: Only available seats are listed
@@ -303,8 +311,9 @@ context SeatService::listAvailableSeats(
   flightId : UUID
 ) : SeatListResponseDto
 post BR_SEAT_002_AvailableSeats:
-  result.businessSeats->forAll(seat | seat.available = true) and
-  result.economySeats->forAll(seat | seat.available = true)
+  result.success implies
+    result.data.businessSeats->forAll(seat | seat.available = true) and
+    result.data.economySeats->forAll(seat | seat.available = true)
 
 
 BR-SEAT-003: Seats are grouped by class
@@ -312,10 +321,11 @@ context SeatService::listAvailableSeats(
   flightId : UUID
 ) : SeatListResponseDto
 post BR_SEAT_003_SeatClasses:
-  result.businessSeats->forAll(seat |
-    seat.seatClass = SeatClass::BUSINESS) and
-  result.economySeats->forAll(seat |
-    seat.seatClass = SeatClass::ECONOMY)
+  result.success implies
+    result.data.businessSeats->forAll(seat |
+      seat.seatClass = SeatClass::BUSINESS) and
+    result.data.economySeats->forAll(seat |
+      seat.seatClass = SeatClass::ECONOMY)
 
 
 BR-SEAT-004: Seats are ordered by seat number
@@ -323,8 +333,9 @@ context SeatService::listAvailableSeats(
   flightId : UUID
 ) : SeatListResponseDto
 post BR_SEAT_004_AscendingOrder:
-  isSeatNumberAscending(result.businessSeats) and
-  isSeatNumberAscending(result.economySeats)
+  result.success implies
+    isSeatNumberAscending(result.data.businessSeats) and
+    isSeatNumberAscending(result.data.economySeats)
 
 
 BR-SEAT-005: One choice per passenger and flight
@@ -536,9 +547,12 @@ context SeatService::listAvailableSeats(
   flightId : UUID
 ) : SeatListResponseDto
 post BR_SEAT_018_Currency:
-  not result.currency.oclIsUndefined() and
-  result.businessSeats->forAll(seat | seat.currency = result.currency) and
-  result.economySeats->forAll(seat | seat.currency = result.currency)
+  result.success implies
+    not result.data.currency.oclIsUndefined() and
+    result.data.businessSeats->forAll(seat |
+      seat.currency = result.data.currency) and
+    result.data.economySeats->forAll(seat |
+      seat.currency = result.data.currency)
 Technical constraints:
 - Currency uses an ISO 4217 code, and monetary calculations use the approved fixed-precision rounding policy.
 

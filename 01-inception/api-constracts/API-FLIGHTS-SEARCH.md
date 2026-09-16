@@ -154,7 +154,7 @@ Trigger: Outbound-flight item returned by API-FLIGHTS-SEARCH.
 Description: Tripma trip-mode value carried by the flight item.
 Example: true
 
-### departingFlights[].imgPath
+### departingFlights[].imagePath
 Type: string
 Required: Yes
 Nullable: No
@@ -291,7 +291,7 @@ Trigger: Inbound-flight item returned by API-FLIGHTS-SEARCH.
 Description: Tripma trip-mode value carried by the flight item.
 Example: true
 
-### arrivingFlights[].imgPath
+### arrivingFlights[].imagePath
 Type: string
 Required: Yes
 Nullable: No

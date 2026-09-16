@@ -174,6 +174,7 @@ class PassengerBaggage <<Entity>> {
 
 class SelectedFlightContextDto <<DTO>> {
   selectionContextKey: String [1]
+  searchContextKey: String [1]
   type: Boolean [1]
   currency: String [1]
   departingFlight: FlightDto [1]
@@ -200,7 +201,7 @@ class FlightDto <<DTO>> {
   fromCity: String [1]
   toCity: String [1]
   type: Boolean [1]
-  imgPath: String [1]
+  imagePath: String [1]
   subtotalPrice: Decimal [1]
   taxesAndFees: Decimal [1]
   airlineName: String [1]
@@ -281,7 +282,6 @@ class PassengerInformationState <<State>> {
 
 class PassengerInformationService <<Service>> {
   canContinue(tripContext: PassengerTripContextDto, form: PassengerFormDto): Boolean
-  isPassengerInputValid(tripContext: PassengerTripContextDto, form: PassengerFormDto): Boolean {query}
   prepare(tripContext: PassengerTripContextDto, form: PassengerFormDto): PreparedPassengerContextDto
   saveForm(tripContext: PassengerTripContextDto, form: PassengerFormDto): SavedPassengerFormDto
   restoreForm(tripContext: PassengerTripContextDto, saved: SavedPassengerFormDto): PassengerFormDto
@@ -565,7 +565,84 @@ context PassengerInformationService::canContinue(
   form : PassengerFormDto
 ) : Boolean
 post BR_PASS_014_Result:
-  result = self.isPassengerInputValid(tripContext, form)
+  result =
+    let departureDate : Date = localDate(
+      tripContext.selectedFlights.departingFlight.date,
+      timeZoneForCity(
+        tripContext.selectedFlights.departingFlight.fromCity))
+    in
+    form.selectionContextKey =
+      tripContext.selectedFlights.selectionContextKey and
+    tripContext.searchParams.type = tripContext.selectedFlights.type and
+    form.passengers->size() =
+      tripContext.searchParams.adults + tripContext.searchParams.minors and
+    form.passengers->select(passenger |
+      passenger.passengerType = PassengerType::ADULT)->size() =
+        tripContext.searchParams.adults and
+    form.passengers->select(passenger |
+      passenger.passengerType = PassengerType::MINOR)->size() =
+        tripContext.searchParams.minors and
+    form.passengers->isUnique(passenger | passenger.passengerRef) and
+    form.passengers->one(passenger |
+      passenger.passengerRef = form.primaryPassengerRef and
+      passenger.passengerType = PassengerType::ADULT) and
+    form.passengers->forAll(passenger |
+      not passenger.passengerRef.oclIsUndefined() and
+      trim(passenger.passengerRef) <> '' and
+      not passenger.firstName.oclIsUndefined() and
+      trim(passenger.firstName) <> '' and
+      not passenger.lastName.oclIsUndefined() and
+      trim(passenger.lastName) <> '' and
+      not passenger.dateOfBirth.oclIsUndefined() and
+      passenger.dateOfBirth < departureDate and
+      (passenger.passengerType = PassengerType::ADULT implies
+        ageOn(passenger.dateOfBirth, departureDate) >= 18) and
+      (passenger.passengerType = PassengerType::MINOR implies
+        ageOn(passenger.dateOfBirth, departureDate) < 18) and
+      (passenger.email.oclIsUndefined() or
+        isEmail(lower(trim(passenger.email)))) and
+      (passenger.phone.oclIsUndefined() or
+        isPhone(trim(passenger.phone)))) and
+    (if form.emergencyContact.usePrimaryPassenger then
+       let primary : PassengerInputDto = form.passengers->any(passenger |
+         passenger.passengerRef = form.primaryPassengerRef)
+       in
+         not primary.email.oclIsUndefined() and
+         isEmail(lower(trim(primary.email))) and
+         not primary.phone.oclIsUndefined() and
+         isPhone(trim(primary.phone))
+     else
+       not form.emergencyContact.firstName.oclIsUndefined() and
+       trim(form.emergencyContact.firstName) <> '' and
+       not form.emergencyContact.lastName.oclIsUndefined() and
+       trim(form.emergencyContact.lastName) <> '' and
+       not form.emergencyContact.email.oclIsUndefined() and
+       isEmail(lower(trim(form.emergencyContact.email))) and
+       not form.emergencyContact.phone.oclIsUndefined() and
+       isPhone(trim(form.emergencyContact.phone))
+     endif) and
+    form.baggage->size() = form.passengers->size() and
+    form.baggage->isUnique(item | item.passengerRef) and
+    form.baggage->forAll(item |
+      form.passengers->exists(passenger |
+        passenger.passengerRef = item.passengerRef) and
+      item.departingCheckedBags >= 0 and
+      item.departingCheckedBags <=
+        tripContext.departingMaxCheckedBagsPerPassenger) and
+    (if tripContext.selectedFlights.type = true then
+       not tripContext.selectedFlights.returningFlight.oclIsUndefined() and
+       not tripContext.returningMaxCheckedBagsPerPassenger.oclIsUndefined() and
+       form.baggage->forAll(item |
+         not item.returningCheckedBags.oclIsUndefined() and
+         item.returningCheckedBags >= 0 and
+         item.returningCheckedBags <=
+           tripContext.returningMaxCheckedBagsPerPassenger)
+     else
+       tripContext.selectedFlights.returningFlight.oclIsUndefined() and
+       tripContext.returningMaxCheckedBagsPerPassenger.oclIsUndefined() and
+       form.baggage->forAll(item |
+         item.returningCheckedBags.oclIsUndefined())
+     endif)
 
 
 BR-PASS-015: Save the current passenger form

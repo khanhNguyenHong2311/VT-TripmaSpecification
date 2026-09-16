@@ -117,7 +117,7 @@ class Flight <<Entity>> {
   id: UUID [1]
   fromCity: String [1]
   toCity: String [1]
-  imgPath: String [1]
+  imagePath: String [1]
   subtotalPrice: Decimal [1]
   taxesAndFees: Decimal [1]
   currency: String [1]
@@ -166,7 +166,7 @@ class FlightDto <<DTO>> {
   fromCity: String [1]
   toCity: String [1]
   type: Boolean [1]
-  imgPath: String [1]
+  imagePath: String [1]
   subtotalPrice: Decimal [1]
   taxesAndFees: Decimal [1]
   airlineName: String [1]
@@ -229,7 +229,7 @@ class SearchResponseDto <<DTO>> {
 class FlightService <<Service>> {
   search(dto: SearchDto): SearchResponseDto
   priceGridMinimum(search: SearchDto, gridItem: PriceGridDto): Decimal {query}
-  priceRatingFor(flights: FlightDto [0..*], priceHistory: PriceHistoryDto [0..*]): PriceRatingDto {query}
+  priceRatingFor(flights: FlightDto [0..*], priceHistory: PriceHistoryDto [0..*]): PriceRatingDto [0..1] {query}
 }
 
 class FlightFilterService <<Service>> {
@@ -431,12 +431,12 @@ context FlightService::search(
 pre BR_SEARCH_014_MaxFutureStartDate:
   dto.startDate <= todayIn(
     timeZoneForCity(dto.fromCity)
-  ) + 330_DAYS
+  ) + days(330)
 pre BR_SEARCH_014_MaxFutureEndDate:
   dto.type = true implies
     dto.endDate <= todayIn(
       timeZoneForCity(dto.fromCity)
-    ) + 330_DAYS
+    ) + days(330)
 
 
 BR-SEARCH-015: Price-grid date range
@@ -445,16 +445,16 @@ context FlightService::search(
 ) : SearchResponseDto
 post BR_SEARCH_015_PriceGridBounds:
   result.priceGrid->forAll(gridItem |
-    gridItem.departingDate >= dto.startDate - 3_DAYS and
-    gridItem.departingDate <= dto.startDate + 3_DAYS and
+    gridItem.departingDate >= dto.startDate - days(3) and
+    gridItem.departingDate <= dto.startDate + days(3) and
     gridItem.departingDate >= todayIn(timeZoneForCity(dto.fromCity)) and
-    gridItem.departingDate <= todayIn(timeZoneForCity(dto.fromCity)) + 330_DAYS and
+    gridItem.departingDate <= todayIn(timeZoneForCity(dto.fromCity)) + days(330) and
     if dto.type = true then
       not gridItem.returningDate.oclIsUndefined() and
-      gridItem.returningDate >= dto.endDate - 3_DAYS and
-      gridItem.returningDate <= dto.endDate + 3_DAYS and
+      gridItem.returningDate >= dto.endDate - days(3) and
+      gridItem.returningDate <= dto.endDate + days(3) and
       gridItem.returningDate >= gridItem.departingDate and
-      gridItem.returningDate <= todayIn(timeZoneForCity(dto.fromCity)) + 330_DAYS
+      gridItem.returningDate <= todayIn(timeZoneForCity(dto.fromCity)) + days(330)
     else
       gridItem.returningDate.oclIsUndefined()
     endif
@@ -497,7 +497,7 @@ post BR_SEARCH_018_HistoryBounds:
   in
     result.priceHistory->forAll(historyItem |
       historyItem.recordedDate < today and
-      historyItem.recordedDate >= today - 30_DAYS
+      historyItem.recordedDate >= today - days(30)
     )
 
 
@@ -540,6 +540,9 @@ post BR_SEARCH_020_PriceRating:
     result.departingFlights,
     result.priceHistory
   )
+post BR_SEARCH_020_PriceRatingAvailability:
+  (result.departingFlights->isEmpty() or result.priceHistory->isEmpty())
+    implies result.priceRating.oclIsUndefined()
 Technical constraints:
 - A date without an observation is omitted rather than represented by a fabricated zero value.
 

@@ -137,7 +137,7 @@ class FlightDto <<DTO>> {
   fromCity: String [1]
   toCity: String [1]
   type: Boolean [1]
-  imgPath: String [1]
+  imagePath: String [1]
   subtotalPrice: Decimal [1]
   taxesAndFees: Decimal [1]
   airlineName: String [1]

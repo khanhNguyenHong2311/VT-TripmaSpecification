@@ -95,6 +95,15 @@ Trigger: API-SEATS-LIST response.
 Description: Human-readable Tripma response detail.
 Example: "Tripma seat information is ready"
 
+### data
+
+Type: object
+Required: Yes
+Nullable: No
+Trigger: Successful API-SEATS-LIST response.
+Description: Tripma seat-list data object.
+Example: {}
+
 ### data.flightId
 
 Type: string; Format: UUID

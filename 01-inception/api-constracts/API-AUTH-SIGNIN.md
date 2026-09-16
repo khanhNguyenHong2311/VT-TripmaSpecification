@@ -174,9 +174,9 @@ Example: "traveler@example.com"
 ### data.user.username
 
 Type: string
-Required: No
-Nullable: Yes
-Trigger: Authenticated-account summary returned by the API when the field is supplied.
+Required: Yes
+Nullable: No
+Trigger: Authenticated-account summary returned by the API.
 Description: Username value carried by the summary.
 Example: "tripma-user-example"
 

@@ -155,12 +155,17 @@ class PassengerBaggage <<Entity>> {
   checkedBags: Integer [1]
 }
 
+class Seat <<Entity>> {
+  id: UUID [1]
+  seatNumber: String [1]
+  seatClass: SeatClass [1]
+}
+
 class SeatAssignment <<Entity>> {
   id: UUID [1]
   passengerInfoId: UUID [1]
   flightId: UUID [1]
-  seatNumber: String [1]
-  seatClass: SeatClass [1]
+  seatId: UUID [1]
 }
 
 enum SeatClass {
@@ -259,11 +264,12 @@ class BookingConfirmationService <<Service>> {
   getConfirmation(access: ConfirmationAccessDto): BookingConfirmationResponseDto
 }
 
-Booking "1" -- "1" Flight : departing flight
-Booking "0..1" -- "1" Flight : returning flight
+Booking "0..*" -- "1" Flight : departing flight
+Booking "0..*" -- "0..1" Flight : returning flight
 Booking "1" -- "1..*" PassengerInfo : contains
 PassengerInfo "1" -- "1..*" PassengerBaggage : has
 PassengerInfo "1" -- "1..*" SeatAssignment : receives
+Seat "1" -- "0..1" SeatAssignment : assigned through
 Booking "1" -- "1" PaymentInfo : paid through
 
 BookingConfirmationViewDto "1" *-- "1" FlightConfirmationViewDto : departing
@@ -367,8 +373,10 @@ post BR_CONFIRM_005_Seats:
       SeatAssignment.allInstances()->exists(assignment |
         assignment.passengerInfoId = seat.passengerId and
         assignment.flightId = seat.flightId and
-        assignment.seatNumber = seat.seatNumber and
-        assignment.seatClass = seat.seatClass))
+        Seat.allInstances()->exists(storedSeat |
+          storedSeat.id = assignment.seatId and
+          storedSeat.seatNumber = seat.seatNumber and
+          storedSeat.seatClass = seat.seatClass)))
 
 
 BR-CONFIRM-006: Baggage projection
@@ -449,7 +457,7 @@ card security code, payment token, password, or password hash.
 
 BR-CONFIRM-011: Confirmation retrieval is read-only
 Calling API-BOOKING-CONFIRMATION-GET shall not create, update, or delete Booking,
-Flight, PassengerInfo, PassengerBaggage, SeatAssignment, or PaymentInfo records.
+Flight, PassengerInfo, PassengerBaggage, Seat, SeatAssignment, or PaymentInfo records.
 Technical constraints:
 - Client-side recovery stores only the minimum confirmation reference needed to request the view and must not store raw payment credentials.
 

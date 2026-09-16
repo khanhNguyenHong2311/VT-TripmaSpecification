@@ -8,6 +8,7 @@ StringNormalizer:
 
 DateTimeUtility:
 - `now()` returns the current date and time supplied by the calling context.
+- `days(count)` returns a calendar-day duration containing `count` days for date arithmetic.
 - `truncateToDay(dateTime)` returns the date portion of `dateTime` at the start of that day.
 - `startOfDay(date, timeZone)` returns the first valid instant of `date` in `timeZone`.
 - `startOfNextDay(date, timeZone)` returns the first valid instant of the following local date in `timeZone`.
@@ -38,7 +39,7 @@ PasswordHasher:
 
 FlightService:
 - `priceGridMinimum(search, gridItem)` returns the minimum eligible outbound subtotal for one-way travel or outbound-plus-return subtotal for round-trip travel at the grid coordinate.
-- `priceRatingFor(flights, priceHistory)` returns the current average, projected fare, percentage change, and Tripma recommendation derived from current results and chronological route-price history.
+- `priceRatingFor(flights, priceHistory)` returns the current average, projected fare, percentage change, and Tripma recommendation derived from current results and chronological route-price history, or undefined when the supplied collections do not contain enough information to produce a rating.
 
 PassengerInformationService:
 - `normalizePassengers(passengers)` returns normalized passenger values while preserving undefined optional values.
@@ -73,6 +74,7 @@ class StringNormalizer <<Utility>> {
 
 class DateTimeUtility <<Utility>> {
   now(): DateTime
+  days(count: Integer): Duration
   truncateToDay(dateTime: DateTime): DateTime
   startOfDay(
     date: Date,
@@ -140,7 +142,7 @@ class FlightService <<Service>> {
   priceRatingFor(
     flights: FlightDto [0..*],
     priceHistory: PriceHistoryDto [0..*]
-  ): PriceRatingDto
+  ): PriceRatingDto [0..1]
 }
 
 class PassengerInformationService <<Service>> {
