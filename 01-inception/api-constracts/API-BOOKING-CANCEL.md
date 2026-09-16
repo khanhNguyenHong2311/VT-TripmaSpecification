@@ -197,4 +197,4 @@ Nullable: No
 
 ## Notes
 
-This contract completes the cancellation-policy function represented in the Tripma payment experience. Its behavior is defined by UC-14.
+This contract performs booking cancellation for UC-14 and preserves the cancelled booking as historical data.

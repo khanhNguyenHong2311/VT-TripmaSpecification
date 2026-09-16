@@ -3,13 +3,9 @@ artifact_type: business-use-case-specification
 status: "Draft"
 uc_id: UC-01
 uc_name: "Search Flights"
-source_type: repository-reference
-reference_project: Tripma
 ---
 
 # UC-01: Search Flights
-
-> Reference basis: the Tripma application source and its implemented or visibly planned functionality. This specification may complete that functionality for the target system.
 
 ## Functional Use-Case Specification
 

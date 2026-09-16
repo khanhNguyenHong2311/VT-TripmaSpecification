@@ -3,13 +3,9 @@ artifact_type: business-use-case-specification
 status: "Draft"
 uc_id: UC-07
 uc_name: "Sign Up"
-source_type: repository-reference
-reference_project: Tripma
 ---
 
 # UC-07: Sign Up
-
-> Reference basis: the Tripma application source and its implemented or visibly planned functionality. This specification may complete that functionality for the target system.
 
 ## Functional Use-Case Specification
 

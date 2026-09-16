@@ -232,4 +232,4 @@ Nullable: No
 
 ## Notes
 
-This contract completes the Share Itinerary experience already represented in the Tripma booking-confirmation page and `ShareItinerary` persistence model.
+This contract sends the itinerary of an accessible booking to the recipient specified in UC-09.

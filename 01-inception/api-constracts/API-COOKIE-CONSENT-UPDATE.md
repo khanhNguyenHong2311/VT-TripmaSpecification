@@ -201,4 +201,4 @@ Nullable: No
 
 ## Notes
 
-This local API writes the Tripma first-party consent cookie. Its behavior is defined by UC-15.
+This local API stores the consent selection required by UC-15 in a first-party cookie.

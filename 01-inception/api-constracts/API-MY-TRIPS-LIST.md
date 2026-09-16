@@ -247,4 +247,4 @@ Nullable: No
 
 ## Notes
 
-This contract completes the authenticated Your Trips entry already represented in the Tripma navbar and booking-confirmation experience.
+This contract returns the authenticated user's trip collection required by UC-12.

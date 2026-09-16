@@ -199,4 +199,4 @@ Nullable: No
 
 ## Notes
 
-The catch-all path represents the Tripma authentication route family used by the email-and-password exchange.
+This contract handles email-and-password authentication and establishes the session required by UC-08.

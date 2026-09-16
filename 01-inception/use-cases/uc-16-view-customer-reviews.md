@@ -3,13 +3,9 @@ artifact_type: business-use-case-specification
 status: "Draft"
 uc_id: UC-16
 uc_name: "View Customer Reviews"
-source_type: repository-reference
-reference_project: Tripma
 ---
 
 # UC-16: View Customer Reviews
-
-> Reference basis: the Tripma homepage loads user comments from `/api/comments` and displays the reviewer's identity, date, rating, and review text. This specification normalizes that implemented function for the target system.
 
 ## Functional Use-Case Specification
 

@@ -3,13 +3,9 @@ artifact_type: business-use-case-specification
 status: "Draft"
 uc_id: UC-03
 uc_name: "Enter Passenger Information"
-source_type: repository-reference
-reference_project: Tripma
 ---
 
 # UC-03: Enter Passenger Information
-
-> Reference basis: the Tripma application source and its implemented or visibly planned functionality. This specification may complete that functionality for the target system.
 
 ## Functional Use-Case Specification
 

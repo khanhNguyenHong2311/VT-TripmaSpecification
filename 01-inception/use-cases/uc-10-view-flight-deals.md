@@ -3,13 +3,9 @@ artifact_type: business-use-case-specification
 status: "Draft"
 uc_id: UC-10
 uc_name: "View Flight Deals"
-source_type: repository-reference
-reference_project: Tripma
 ---
 
 # UC-10: View Flight Deals
-
-> Reference basis: the Tripma application source and its implemented or visibly planned functionality. This specification completes that functionality for the target system.
 
 ## Functional Use-Case Specification
 

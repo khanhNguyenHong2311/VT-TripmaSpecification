@@ -211,4 +211,4 @@ Nullable: No
 
 ## Notes
 
-This contract completes the save-card option represented in the Tripma payment experience. Its behavior is defined by UC-13.
+This contract saves a reusable payment-method reference after the successful booking payment described by UC-13.

@@ -141,4 +141,4 @@ Nullable: No
 
 ## Notes
 
-This contract completes the existing `/api/flight-deals` route with the normalized Tripma response envelope used by the target specifications.
+This contract returns the active flight-deal collection required by UC-10.

@@ -3,13 +3,9 @@ artifact_type: business-use-case-specification
 status: "Draft"
 uc_id: UC-05
 uc_name: "Make Payment"
-source_type: repository-reference
-reference_project: Tripma
 ---
 
 # UC-05: Make Payment
-
-> Reference basis: the Tripma application source and its implemented or visibly planned functionality. This specification may complete that functionality for the target system.
 
 ## Functional Use-Case Specification
 

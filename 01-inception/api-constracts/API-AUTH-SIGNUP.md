@@ -194,4 +194,4 @@ Nullable: No
 
 ## Notes
 
-Related Tripma experiences: navbar Sign up modal and the UC-05 account-creation entry point.
+This contract creates an account for UC-07. It may be invoked from the navbar registration entry or from the account-creation option referenced by UC-05.

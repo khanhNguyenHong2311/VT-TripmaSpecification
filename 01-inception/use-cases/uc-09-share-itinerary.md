@@ -3,13 +3,9 @@ artifact_type: business-use-case-specification
 status: "Draft"
 uc_id: UC-09
 uc_name: "Share Itinerary"
-source_type: repository-reference
-reference_project: Tripma
 ---
 
 # UC-09: Share Itinerary
-
-> Reference basis: the Tripma application source and its implemented or visibly planned functionality. This specification completes the existing Share Itinerary experience for the target system.
 
 ## Functional Use-Case Specification
 

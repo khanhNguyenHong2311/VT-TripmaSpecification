@@ -145,4 +145,4 @@ Nullable: No
 
 ## Notes
 
-This local API reads the Tripma first-party consent cookie. Its behavior is defined by UC-15.
+This local API reads the first-party consent cookie required by UC-15.

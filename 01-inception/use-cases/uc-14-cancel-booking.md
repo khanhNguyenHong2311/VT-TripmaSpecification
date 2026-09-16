@@ -3,13 +3,9 @@ artifact_type: business-use-case-specification
 status: "Draft"
 uc_id: UC-14
 uc_name: "Cancel Booking"
-source_type: repository-reference
-reference_project: Tripma
 ---
 
 # UC-14: Cancel Booking
-
-> Reference basis: the Tripma payment experience explicitly presents a flight-cancellation policy. This specification completes that visibly planned function for the target system.
 
 ## Functional Use-Case Specification
 

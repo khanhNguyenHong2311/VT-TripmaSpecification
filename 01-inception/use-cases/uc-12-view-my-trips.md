@@ -3,13 +3,9 @@ artifact_type: business-use-case-specification
 status: "Draft"
 uc_id: UC-12
 uc_name: "View My Trips"
-source_type: repository-reference
-reference_project: Tripma
 ---
 
 # UC-12: View My Trips
-
-> Reference basis: the Tripma application source and its implemented or visibly planned functionality. This specification completes the existing Your Trips entry point for the target system.
 
 ## Functional Use-Case Specification
 

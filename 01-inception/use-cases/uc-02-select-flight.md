@@ -3,13 +3,9 @@ artifact_type: business-use-case-specification
 status: "Draft"
 uc_id: UC-02
 uc_name: "Select Flight"
-source_type: repository-reference
-reference_project: Tripma
 ---
 
 # UC-02: Select Flight
-
-> Reference basis: the Tripma application source and its implemented or visibly planned functionality. This specification may complete that functionality for the target system.
 
 ## Functional Use-Case Specification
 

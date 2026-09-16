@@ -147,4 +147,4 @@ Nullable: No
 
 ## Notes
 
-This contract completes the existing `/api/unique-places` route with the normalized Tripma response envelope used by the target specifications.
+This contract returns the active unique-place collection required by UC-11.

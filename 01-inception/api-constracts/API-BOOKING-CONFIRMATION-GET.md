@@ -465,4 +465,4 @@ Nullable: No
 
 ## Notes
 
-Related Tripma experience: booking-success page (`/successbooking`).
+This contract supplies booking-confirmation data to the booking-success page (`/successbooking`) for UC-06.

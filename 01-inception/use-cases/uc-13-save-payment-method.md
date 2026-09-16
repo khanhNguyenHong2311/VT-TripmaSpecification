@@ -3,13 +3,9 @@ artifact_type: business-use-case-specification
 status: "Draft"
 uc_id: UC-13
 uc_name: "Save Payment Method"
-source_type: repository-reference
-reference_project: Tripma
 ---
 
 # UC-13: Save Payment Method
-
-> Reference basis: the Tripma payment experience exposes a save-card option and the reference schema includes saved payment methods. This specification completes that existing function for the target system.
 
 ## Functional Use-Case Specification
 

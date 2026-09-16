@@ -3,13 +3,9 @@ artifact_type: business-use-case-specification
 status: "Draft"
 uc_id: UC-11
 uc_name: "View Unique Places"
-source_type: repository-reference
-reference_project: Tripma
 ---
 
 # UC-11: View Unique Places
-
-> Reference basis: the Tripma application source and its implemented or visibly planned functionality. This specification completes that functionality for the target system.
 
 ## Functional Use-Case Specification
 

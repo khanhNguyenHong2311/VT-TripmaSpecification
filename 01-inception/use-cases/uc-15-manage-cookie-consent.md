@@ -3,13 +3,9 @@ artifact_type: business-use-case-specification
 status: "Draft"
 uc_id: UC-15
 uc_name: "Manage Cookie Consent"
-source_type: repository-reference
-reference_project: Tripma
 ---
 
 # UC-15: Manage Cookie Consent
-
-> Reference basis: the Tripma homepage contains a cookie-consent popup with accept and settings actions, while the reference implementation only closes the popup temporarily. This specification completes that existing function for the local target system.
 
 ## Functional Use-Case Specification
 

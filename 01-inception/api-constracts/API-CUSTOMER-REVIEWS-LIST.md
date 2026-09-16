@@ -169,4 +169,4 @@ Nullable: No
 
 ## Notes
 
-This contract normalizes the existing Tripma `/api/comments` route as a paginated public review response. Its behavior is defined by UC-16.
+This contract returns the paginated public customer-review collection required by UC-16.
