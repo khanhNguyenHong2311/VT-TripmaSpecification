@@ -117,7 +117,16 @@ Trigger: Trip collection returned by the API.
 Description: Completed-trip summary collection.
 Example: []
 
-### data.upcomingTrips[] / data.completedTrips[]
+### data.cancelledTrips
+
+Type: array
+Required: Yes
+Nullable: No
+Trigger: Trip collection returned by the API.
+Description: Cancelled-trip summary collection.
+Example: []
+
+### data.upcomingTrips[] / data.completedTrips[] / data.cancelledTrips[]
 
 Type: object
 Required: Yes
@@ -140,7 +149,7 @@ Example: "4cc7444a-3627-42cf-919f-1b1351511325"
 Type: string; Format: enum
 Required: Yes
 Nullable: No
-Allowed values: CONFIRMED
+Allowed values: CONFIRMED, CANCELLED
 Trigger: Trip-summary item returned by the API.
 Description: Booking-status value carried by the item.
 Example: "CONFIRMED"
@@ -150,7 +159,7 @@ Example: "CONFIRMED"
 Type: string; Format: enum
 Required: Yes
 Nullable: No
-Allowed values: UPCOMING, COMPLETED
+Allowed values: UPCOMING, COMPLETED, CANCELLED
 Trigger: Trip-summary item returned by the API.
 Description: Trip-timing value carried by the item.
 Example: "UPCOMING"

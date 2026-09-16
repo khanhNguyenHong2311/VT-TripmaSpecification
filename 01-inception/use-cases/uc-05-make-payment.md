@@ -196,6 +196,17 @@ class Booking <<Entity>> {
   createdAt: DateTime [1]
 }
 
+class BookingCancellationTerm <<Entity>> {
+  id: UUID [1]
+  bookingId: UUID [1]
+  policyCode: String [1]
+  cancellationDeadlineAt: DateTime [1]
+  refundRate: Decimal [1]
+  cancellationFee: Decimal [1]
+  currency: String [1]
+  createdAt: DateTime [1]
+}
+
 class PassengerInfo <<Entity>> {
   id: UUID [1]
   bookingId: UUID [1]
@@ -353,6 +364,7 @@ Seat "1" -- "0..1" SeatAssignment : assigned through
 Flight "1" -- "0..*" PassengerBaggage : applies to
 Flight "1" -- "0..*" SeatAssignment : applies to
 Booking "1" -- "1" PaymentInfo : paid through
+Booking "1" -- "1" BookingCancellationTerm : governed by
 
 MakePaymentDto "1" *-- "1" PaymentInputDto : payment
 MakePaymentDto "1" *-- "1" BillingAddressInputDto : billing address
@@ -627,5 +639,12 @@ Technical constraints:
 - Raw card data and security codes must not be written to application logs, analytics, URLs or query strings.
 - Provider tokens must be encrypted at rest and excluded from default ORM selection and API responses.
 - A security code is used only for the immediate authorization attempt and is discarded afterward.
+
+
+BR-PAY-019: Cancellation-term snapshot
+Every successfully created booking shall own one BookingCancellationTerm that
+captures the applicable policy code, cancellation deadline, refund rate,
+cancellation fee, and currency when the booking is purchased. Later policy
+changes shall not modify that recorded term.
 
 ~~~

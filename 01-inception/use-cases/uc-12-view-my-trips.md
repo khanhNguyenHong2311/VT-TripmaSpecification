@@ -86,7 +86,7 @@ API-MY-TRIPS-LIST; API-BOOKING-CONFIRMATION-GET through UC-06
 
 ### Notes
 
-Scope clarification: UC-12 lists bookings associated with the authenticated account. Booking confirmation details remain assigned to UC-06, itinerary sharing remains assigned to UC-09, and booking modification is outside this use case.
+Scope clarification: UC-12 lists bookings associated with the authenticated account. Booking confirmation details remain assigned to UC-06, itinerary sharing remains assigned to UC-09, and booking cancellation remains assigned to UC-14.
 
 ## UML Model
 
@@ -95,11 +95,13 @@ Scope clarification: UC-12 lists bookings associated with the authenticated acco
 
 enum BookingStatus {
   CONFIRMED
+  CANCELLED
 }
 
 enum TripTimingStatus {
   UPCOMING
   COMPLETED
+  CANCELLED
 }
 
 class User <<Entity>> {
@@ -162,6 +164,7 @@ class MyTripSummaryDto <<DTO>> {
 class MyTripsDataDto <<DTO>> {
   upcomingTrips: MyTripSummaryDto [0..*]
   completedTrips: MyTripSummaryDto [0..*]
+  cancelledTrips: MyTripSummaryDto [0..*]
 }
 
 class MyTripsResponseDto <<DTO>> {
@@ -183,6 +186,7 @@ MyTripSummaryDto "1" *-- "1" MyTripFlightDto : departing flight
 MyTripSummaryDto "1" *-- "0..1" MyTripFlightDto : returning flight
 MyTripsDataDto "1" *-- "0..*" MyTripSummaryDto : upcoming trips
 MyTripsDataDto "1" *-- "0..*" MyTripSummaryDto : completed trips
+MyTripsDataDto "1" *-- "0..*" MyTripSummaryDto : cancelled trips
 MyTripsResponseDto "1" *-- "0..1" MyTripsDataDto : data
 
 MyTripsService ..> MyTripsResponseDto
@@ -215,17 +219,21 @@ context MyTripsService::listMyTrips(
 post BR_TRIPS_002_Scope:
   result.success implies
     let trips : Sequence(MyTripSummaryDto) =
-      result.data.upcomingTrips->union(result.data.completedTrips)
+      result.data.upcomingTrips
+        ->union(result.data.completedTrips)
+        ->union(result.data.cancelledTrips)
     in
       trips->isUnique(trip | trip.bookingId) and
       trips->size() = Booking.allInstances()->select(booking |
         booking.userId = currentUserId and
-        booking.status = BookingStatus::CONFIRMED)->size() and
+        Set { BookingStatus::CONFIRMED, BookingStatus::CANCELLED }
+          ->includes(booking.status))->size() and
       trips->forAll(trip |
         Booking.allInstances()->exists(booking |
           booking.id = trip.bookingId and
           booking.userId = currentUserId and
-          booking.status = BookingStatus::CONFIRMED))
+          Set { BookingStatus::CONFIRMED, BookingStatus::CANCELLED }
+            ->includes(booking.status)))
 
 
 BR-TRIPS-003: Flight-leg projection
@@ -234,7 +242,9 @@ context MyTripsService::listMyTrips(
 ) : MyTripsResponseDto
 post BR_TRIPS_003_Flights:
   result.success implies
-    result.data.upcomingTrips->union(result.data.completedTrips)->forAll(trip |
+    result.data.upcomingTrips
+      ->union(result.data.completedTrips)
+      ->union(result.data.cancelledTrips)->forAll(trip |
       let booking : Booking = Booking.allInstances()->any(item |
         item.id = trip.bookingId)
       in
@@ -251,7 +261,9 @@ context MyTripsService::listMyTrips(
 ) : MyTripsResponseDto
 post BR_TRIPS_004_JourneyEnd:
   result.success implies
-    result.data.upcomingTrips->union(result.data.completedTrips)->forAll(trip |
+    result.data.upcomingTrips
+      ->union(result.data.completedTrips)
+      ->union(result.data.cancelledTrips)->forAll(trip |
       trip.journeyEndAt =
         if trip.returningFlight.oclIsUndefined()
         then trip.departingFlight.arrivalAt
@@ -266,11 +278,16 @@ context MyTripsService::listMyTrips(
 post BR_TRIPS_005_Timing:
   result.success implies
     result.data.upcomingTrips->forAll(trip |
+      trip.bookingStatus = BookingStatus::CONFIRMED and
       trip.timingStatus = TripTimingStatus::UPCOMING and
       trip.journeyEndAt >= now()) and
     result.data.completedTrips->forAll(trip |
+      trip.bookingStatus = BookingStatus::CONFIRMED and
       trip.timingStatus = TripTimingStatus::COMPLETED and
-      trip.journeyEndAt < now())
+      trip.journeyEndAt < now()) and
+    result.data.cancelledTrips->forAll(trip |
+      trip.bookingStatus = BookingStatus::CANCELLED and
+      trip.timingStatus = TripTimingStatus::CANCELLED)
 
 
 BR-TRIPS-006: Trip ordering
@@ -282,7 +299,9 @@ post BR_TRIPS_006_Order:
     result.data.upcomingTrips =
       result.data.upcomingTrips->sortedBy(trip | trip.departingFlight.date) and
     result.data.completedTrips =
-      result.data.completedTrips->sortedBy(trip | trip.journeyEndAt)->reverse()
+      result.data.completedTrips->sortedBy(trip | trip.journeyEndAt)->reverse() and
+    result.data.cancelledTrips =
+      result.data.cancelledTrips->sortedBy(trip | trip.bookedAt)->reverse()
 
 
 BR-TRIPS-007: Passenger count
@@ -291,7 +310,9 @@ context MyTripsService::listMyTrips(
 ) : MyTripsResponseDto
 post BR_TRIPS_007_Passengers:
   result.success implies
-    result.data.upcomingTrips->union(result.data.completedTrips)->forAll(trip |
+    result.data.upcomingTrips
+      ->union(result.data.completedTrips)
+      ->union(result.data.cancelledTrips)->forAll(trip |
       trip.passengerCount = PassengerInfo.allInstances()->select(passenger |
         passenger.bookingId = trip.bookingId)->size() and
       trip.passengerCount >= 1)
@@ -303,7 +324,9 @@ context MyTripsService::listMyTrips(
 ) : MyTripsResponseDto
 post BR_TRIPS_008_Summary:
   result.success implies
-    result.data.upcomingTrips->union(result.data.completedTrips)->forAll(trip |
+    result.data.upcomingTrips
+      ->union(result.data.completedTrips)
+      ->union(result.data.cancelledTrips)->forAll(trip |
       let booking : Booking = Booking.allInstances()->any(item |
         item.id = trip.bookingId)
       in
@@ -323,11 +346,13 @@ context MyTripsService::listMyTrips(
 post BR_TRIPS_009_Empty:
   Booking.allInstances()->select(booking |
     booking.userId = currentUserId and
-    booking.status = BookingStatus::CONFIRMED)->isEmpty()
+    Set { BookingStatus::CONFIRMED, BookingStatus::CANCELLED }
+      ->includes(booking.status))->isEmpty()
   implies
     result.success and
     result.data.upcomingTrips->isEmpty() and
-    result.data.completedTrips->isEmpty()
+    result.data.completedTrips->isEmpty() and
+    result.data.cancelledTrips->isEmpty()
 
 
 BR-TRIPS-010: Sensitive trip-summary data

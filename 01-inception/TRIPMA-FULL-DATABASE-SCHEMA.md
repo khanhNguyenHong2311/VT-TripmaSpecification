@@ -1,4 +1,4 @@
-# Tripma Full Database Schema — UC-01 to UC-13
+# Tripma Full Database Schema — UC-01 to UC-15
 
 ```dbml
 Enum seat_class {
@@ -13,6 +13,7 @@ Enum passenger_type {
 
 Enum booking_status {
   CONFIRMED
+  CANCELLED
 }
 
 Enum payment_method {
@@ -29,6 +30,11 @@ Enum payment_status {
   DECLINED
   COMPLETED
   FAILED
+}
+
+Enum refund_status {
+  COMPLETED
+  NOT_REQUIRED
 }
 
 Enum itinerary_delivery_status {
@@ -142,6 +148,17 @@ Table bookings {
 
 }
 
+Table booking_cancellation_terms {
+  id char(36) [pk, not null]
+  booking_id char(36) [not null, unique]
+  policy_code varchar(64) [not null]
+  cancellation_deadline_at datetime(3) [not null]
+  refund_rate decimal(5,4) [not null]
+  cancellation_fee decimal(12,2) [not null]
+  currency char(3) [not null]
+  created_at datetime(3) [not null]
+}
+
 Table passenger_infos {
   id char(36) [pk, not null]
   booking_id char(36) [not null]
@@ -222,6 +239,19 @@ Table payment_infos {
   created_at datetime(3) [not null]
   updated_at datetime(3) [not null]
 
+}
+
+Table booking_cancellations {
+  id char(36) [pk, not null]
+  booking_id char(36) [not null, unique]
+  cancellation_term_id char(36) [not null, unique]
+  refund_status refund_status [not null]
+  cancellation_fee decimal(12,2) [not null]
+  refund_amount decimal(12,2) [not null]
+  currency char(3) [not null]
+  provider_refund_id varchar(191) [unique]
+  idempotency_key varchar(128) [not null, unique]
+  cancelled_at datetime(3) [not null]
 }
 
 Table saved_payment_methods {
@@ -306,6 +336,7 @@ Ref fk_seats_flight: seats.flight_id > flights.id
 Ref fk_bookings_user: bookings.user_id > users.id
 Ref fk_bookings_departing_flight: bookings.departing_flight_id > flights.id
 Ref fk_bookings_returning_flight: bookings.returning_flight_id > flights.id
+Ref fk_booking_cancellation_terms_booking: booking_cancellation_terms.booking_id > bookings.id
 Ref fk_passenger_infos_booking: passenger_infos.booking_id > bookings.id
 Ref fk_emergency_contacts_booking: emergency_contacts.booking_id > bookings.id
 Ref fk_passenger_baggage_passenger: passenger_baggage.passenger_info_id > passenger_infos.id
@@ -314,6 +345,8 @@ Ref fk_seat_assignments_passenger: seat_assignments.passenger_info_id > passenge
 Ref fk_seat_assignments_flight: seat_assignments.flight_id > flights.id
 Ref fk_seat_assignments_seat: seat_assignments.seat_id > seats.id
 Ref fk_payment_infos_booking: payment_infos.booking_id > bookings.id
+Ref fk_booking_cancellations_booking: booking_cancellations.booking_id > bookings.id
+Ref fk_booking_cancellations_term: booking_cancellations.cancellation_term_id > booking_cancellation_terms.id
 Ref fk_saved_payment_methods_user: saved_payment_methods.user_id > users.id
 Ref fk_saved_payment_methods_source_payment: saved_payment_methods.source_payment_info_id > payment_infos.id
 Ref fk_share_itineraries_booking: share_itineraries.booking_id > bookings.id
