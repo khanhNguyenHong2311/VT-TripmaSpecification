@@ -1,4 +1,4 @@
-# Tripma Full Database Schema — UC-01 to UC-15
+# Tripma Full Database Schema — UC-01 to UC-16
 
 ```dbml
 Enum seat_class {
@@ -62,10 +62,28 @@ Table users {
   email varchar(320) [not null, unique]
   password_hash varchar(255) [not null]
   username varchar(80) [not null, unique]
+  display_name varchar(120)
+  profile_image_path varchar(500)
   receive_deal_alerts boolean [not null, default: false]
   terms_accepted_at datetime(3) [not null]
   created_at datetime(3) [not null]
   updated_at datetime(3) [not null]
+}
+
+Table customer_reviews {
+  id char(36) [pk, not null]
+  user_id char(36) [not null]
+  rating tinyint [not null]
+  content varchar(2000) [not null]
+  reviewed_at datetime(3) [not null]
+  published boolean [not null, default: false]
+  created_at datetime(3) [not null]
+  updated_at datetime(3) [not null]
+
+  indexes {
+    (published, reviewed_at) [name: 'idx_customer_reviews_published_reviewed_at']
+    (user_id, reviewed_at) [name: 'idx_customer_reviews_user_reviewed_at']
+  }
 }
 
 Table flights {
@@ -334,6 +352,7 @@ Ref fk_route_price_history_origin_city: route_price_history.origin_city_id > cit
 Ref fk_route_price_history_destination_city: route_price_history.destination_city_id > cities.id
 Ref fk_seats_flight: seats.flight_id > flights.id
 Ref fk_bookings_user: bookings.user_id > users.id
+Ref fk_customer_reviews_user: customer_reviews.user_id > users.id
 Ref fk_bookings_departing_flight: bookings.departing_flight_id > flights.id
 Ref fk_bookings_returning_flight: bookings.returning_flight_id > flights.id
 Ref fk_booking_cancellation_terms_booking: booking_cancellation_terms.booking_id > bookings.id

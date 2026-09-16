@@ -126,15 +126,18 @@ class Booking <<Entity>> {
   createdAt: DateTime [1]
 }
 
+class City <<Entity>> {
+  id: UUID [1]
+  name: String [1]
+}
+
 class Flight <<Entity>> {
   id: UUID [1]
-  fromCity: String [1]
-  toCity: String [1]
+  originCityId: UUID [1]
+  destinationCityId: UUID [1]
   airlineName: String [1]
-  duration: String [1]
   stopsNumber: Integer [1]
-  fromToTime: String [1]
-  date: DateTime [1]
+  departureAt: DateTime [1]
   arrivalAt: DateTime [1]
   subtotalPrice: Decimal [1]
   taxesAndFees: Decimal [1]
@@ -266,6 +269,8 @@ class BookingConfirmationService <<Service>> {
 
 Booking "0..*" -- "1" Flight : departing flight
 Booking "0..*" -- "0..1" Flight : returning flight
+City "1" -- "0..*" Flight : origin
+City "1" -- "0..*" Flight : destination
 Booking "1" -- "1..*" PassengerInfo : contains
 PassengerInfo "1" -- "1..*" PassengerBaggage : has
 PassengerInfo "1" -- "1..*" SeatAssignment : receives

@@ -23,11 +23,11 @@ Cancel Booking
 
 ### Description
 
-As an authenticated user, I want to cancel an eligible booking so that its travel inventory is released and an applicable refund is returned through the original payment path.
+As a booking holder, I want to cancel an eligible booking so that its travel inventory is released and an applicable refund is returned through the original payment path.
 
 ### Actor(s)
 
-Authenticated User
+Visitor; Authenticated User
 
 ### Priority
 
@@ -35,12 +35,12 @@ Medium
 
 ### Trigger
 
-The authenticated user chooses to cancel an account-owned booking.
+The booking holder chooses to cancel an accessible booking.
 
 ### Pre-Condition(s)
 
-PRE-1: An authenticated Tripma session is available.
-PRE-2: The booking belongs to the authenticated account.
+PRE-1: The booking can be accessed through its authenticated owner or its confirmation code.
+PRE-2: The booking reference is available.
 PRE-3: The booking has cancellation terms recorded from its purchase.
 
 ### Post-Condition(s)
@@ -52,7 +52,7 @@ POST-4: On failure, the booking remains unchanged and no duplicate refund is cre
 
 ### Basic Flow
 
-1. The authenticated user opens an account-owned booking from the Tripma trip experience.
+1. The booking holder opens an accessible booking from a Tripma booking experience.
 2. The user chooses to cancel the booking.
 3. Tripma presents the recorded cancellation terms and expected refund outcome.
 4. The user confirms the cancellation.
@@ -82,12 +82,12 @@ AF-3: Retry a completed cancellation request
 
 ### Exception Flow
 
-EF-1: Authentication is unavailable
-5a. If an authenticated session is unavailable, API-BOOKING-CANCEL returns an authentication outcome.
+EF-1: Booking access is unavailable
+5a. If neither account ownership nor the supplied confirmation code establishes access, API-BOOKING-CANCEL returns the corresponding access outcome.
 5b. The booking remains unchanged.
 
 EF-2: Booking is unavailable
-6a. If the booking cannot be resolved for the authenticated account, Tripma returns a not-found outcome.
+6a. If the booking reference cannot be resolved, Tripma returns a not-found outcome.
 6b. The booking remains unchanged.
 
 EF-3: Booking is not cancellable
@@ -112,7 +112,7 @@ API-BOOKING-CANCEL; API-MY-TRIPS-LIST through UC-12; API-BOOKING-CONFIRMATION-GE
 
 ### Notes
 
-Scope clarification: UC-14 cancels the complete booking and does not delete its historical record. Viewing trips remains assigned to UC-12, viewing confirmation details remains assigned to UC-06, and changing an itinerary is outside this use case.
+Scope clarification: UC-14 cancels the complete booking and does not delete its historical record. An authenticated owner may enter through UC-12, while a guest may use the confirmation access established for UC-06. Viewing trips remains assigned to UC-12, viewing confirmation details remains assigned to UC-06, and changing an itinerary is outside this use case.
 
 ## UML Model
 
@@ -143,6 +143,7 @@ class Booking <<Entity>> {
   departingFlightId: UUID [1]
   returningFlightId: UUID [0..1]
   status: BookingStatus [1]
+  confirmationCode: String [1]
   total: Decimal [1]
   currency: String [1]
 }
@@ -205,6 +206,7 @@ class BookingCancellation <<Entity>> {
 
 class CancelBookingDto <<DTO>> {
   bookingId: UUID [1]
+  confirmationCode: String [0..1]
 }
 
 class BookingCancellationDto <<DTO>> {
@@ -262,14 +264,14 @@ BookingCancellationService ..> Seat
 The following rules are authoritative for Prompt E. OCL is preserved where applicable; provider, transaction, and non-OCL constraints remain authoritative natural-language requirements.
 
 ~~~text
-BR-CANCEL-001: Authenticated account
+BR-CANCEL-001: Optional authenticated account
 context BookingCancellationService::cancelBooking(
   dto : CancelBookingDto,
   currentUserId : UUID,
   idempotencyKey : String
 ) : CancelBookingResponseDto
 pre BR_CANCEL_001_User:
-  not currentUserId.oclIsUndefined() and
+  currentUserId.oclIsUndefined() or
   User.allInstances()->exists(user | user.id = currentUserId)
 
 
@@ -285,16 +287,20 @@ pre BR_CANCEL_002_Identity:
   trim(idempotencyKey) <> ''
 
 
-BR-CANCEL-003: Account-owned booking
+BR-CANCEL-003: Booking access
 context BookingCancellationService::cancelBooking(
   dto : CancelBookingDto,
   currentUserId : UUID,
   idempotencyKey : String
 ) : CancelBookingResponseDto
 pre BR_CANCEL_003_Booking:
-  Booking.allInstances()->exists(booking |
+  Booking.allInstances()->one(booking |
     booking.id = dto.bookingId and
-    booking.userId = currentUserId)
+    ((not currentUserId.oclIsUndefined() and
+      booking.userId = currentUserId) or
+     (not dto.confirmationCode.oclIsUndefined() and
+      lower(trim(booking.confirmationCode)) =
+        lower(trim(dto.confirmationCode)))))
 
 
 BR-CANCEL-004: Confirmed booking

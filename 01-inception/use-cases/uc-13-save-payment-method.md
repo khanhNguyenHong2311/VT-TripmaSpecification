@@ -35,7 +35,7 @@ Medium
 
 ### Trigger
 
-The authenticated user chooses to save the card used in the Tripma payment experience.
+UC-05 completes a booking for which the authenticated user recorded a save-card intent.
 
 ### Pre-Condition(s)
 
@@ -50,46 +50,45 @@ POST-3: On failure, no partial saved-payment-method record remains.
 
 ### Basic Flow
 
-1. The authenticated user selects the save-card option during the payment experience.
-2. UC-05 — Make Payment completes the booking and makes its booking reference available.
-3. Tripma submits the booking reference and default-method preference through API-PAYMENT-METHOD-SAVE.
-4. The saved-payment-method service evaluates the request according to the Business Rules.
-5. The service obtains the reusable card reference and display metadata from the completed booking payment.
-6. The service creates the saved payment method for the authenticated account.
-7. API-PAYMENT-METHOD-SAVE returns the masked saved-payment-method summary.
-8. Tripma confirms that the payment method was saved.
+1. UC-05 — Make Payment provides the completed booking reference and recorded save-card preference.
+2. Tripma submits the booking reference and default-method preference through API-PAYMENT-METHOD-SAVE.
+3. The saved-payment-method service evaluates the request according to the Business Rules.
+4. The service obtains the reusable card reference and display metadata from the completed booking payment.
+5. The service creates the saved payment method for the authenticated account.
+6. API-PAYMENT-METHOD-SAVE returns the masked saved-payment-method summary.
+7. Tripma confirms that the payment method was saved and returns the outcome to UC-05.
 
 ### Alternative Flow
 
 AF-1: Save the account's first payment method
-6a. If the account has no saved payment method, Tripma records the new method as the default method.
-6b. The Basic Flow resumes at step 7.
+5a. If the account has no saved payment method, Tripma records the new method as the default method.
+5b. The Basic Flow resumes at step 6.
 
 AF-2: Make the new method the default
-6a. If the authenticated user requested a new default method, Tripma makes the new method the account's only default saved payment method.
-6b. The Basic Flow resumes at step 7.
+5a. If the authenticated user requested a new default method, Tripma makes the new method the account's only default saved payment method.
+5b. The Basic Flow resumes at step 6.
 
 AF-3: Retry the same save request
-4a. If Tripma receives a completed request again with the same idempotency key, it returns the original outcome without creating another record.
-4b. The Basic Flow resumes at step 7.
+3a. If Tripma receives a completed request again with the same idempotency key, it returns the original outcome without creating another record.
+3b. The Basic Flow resumes at step 6.
 
 ### Exception Flow
 
 EF-1: Authentication is unavailable
-3a. If an authenticated session is unavailable, API-PAYMENT-METHOD-SAVE returns an authentication outcome.
-3b. No payment method is saved.
+2a. If an authenticated session is unavailable, API-PAYMENT-METHOD-SAVE returns an authentication outcome.
+2b. No payment method is saved.
 
 EF-2: Booking payment is unavailable
-5a. If the referenced booking or its completed payment cannot be resolved for the current account, Tripma returns a not-found outcome.
-5b. No payment method is saved.
+4a. If the referenced booking or its completed payment cannot be resolved for the current account, Tripma returns a not-found outcome.
+4b. No payment method is saved.
 
 EF-3: Payment source cannot be saved
-5a. If the completed payment does not provide a reusable card reference, Tripma returns a conflict outcome.
-5b. No payment method is saved.
+4a. If the completed payment does not provide a reusable card reference, Tripma returns a conflict outcome.
+4b. No payment method is saved.
 
 EF-4: Save operation fails
-6a. If the operation cannot be completed because of a technical failure, Tripma returns a retryable error outcome.
-6b. Tripma rolls back the save operation.
+5a. If the operation cannot be completed because of a technical failure, Tripma returns a retryable error outcome.
+5b. Tripma rolls back the save operation.
 
 ### Related UI
 

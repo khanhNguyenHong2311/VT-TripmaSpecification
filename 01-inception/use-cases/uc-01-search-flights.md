@@ -113,20 +113,25 @@ Scope clarification: This use case covers discovering flight options. Selecting 
 ~~~plantuml
 @startuml
 
+class City <<Entity>> {
+  id: UUID [1]
+  name: String [1]
+  countryCode: String [1]
+  timeZone: String [1]
+}
+
 class Flight <<Entity>> {
   id: UUID [1]
-  fromCity: String [1]
-  toCity: String [1]
-  imagePath: String [1]
+  originCityId: UUID [1]
+  destinationCityId: UUID [1]
+  imagePath: String [0..1]
   subtotalPrice: Decimal [1]
   taxesAndFees: Decimal [1]
   currency: String [1]
   airlineName: String [1]
-  duration: String [1]
   stopsNumber: Integer [1]
   stopsInfo: String [0..1]
-  fromToTime: String [1]
-  date: DateTime [1]
+  departureAt: DateTime [1]
   arrivalAt: DateTime [1]
 }
 
@@ -144,8 +149,8 @@ enum SeatClass {
 
 class RoutePriceHistory <<Entity>> {
   id: UUID [1]
-  fromCity: String [1]
-  toCity: String [1]
+  originCityId: UUID [1]
+  destinationCityId: UUID [1]
   recordedAt: DateTime [1]
   price: Decimal [1]
   currency: String [1]
@@ -237,6 +242,10 @@ class FlightFilterService <<Service>> {
 }
 
 Flight "1" -- "0..*" Seat : has
+City "1" -- "0..*" Flight : origin
+City "1" -- "0..*" Flight : destination
+City "1" -- "0..*" RoutePriceHistory : origin
+City "1" -- "0..*" RoutePriceHistory : destination
 
 FlightService ..> SearchDto
 FlightService ..> SearchResponseDto
@@ -522,8 +531,12 @@ post BR_SEARCH_020_DailyAverage:
   result.priceHistory->forAll(item |
     let observations : Set(RoutePriceHistory) =
       RoutePriceHistory.allInstances()->select(observation |
-        lower(trim(observation.fromCity)) = lower(trim(dto.fromCity)) and
-        lower(trim(observation.toCity)) = lower(trim(dto.toCity)) and
+        City.allInstances()->exists(origin |
+          origin.id = observation.originCityId and
+          lower(trim(origin.name)) = lower(trim(dto.fromCity))) and
+        City.allInstances()->exists(destination |
+          destination.id = observation.destinationCityId and
+          lower(trim(destination.name)) = lower(trim(dto.toCity))) and
         observation.currency = result.currency and
         localDate(
           observation.recordedAt,

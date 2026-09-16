@@ -59,11 +59,16 @@ POST-2: When retrieval cannot be completed, Tripma reports the outcome without c
 ### Alternative Flow
 
 AF-1: Open a trip confirmation
-6a. The authenticated user selects a trip.
+6a. The authenticated user selects a trip whose booking status is CONFIRMED.
 6b. Tripma invokes UC-06 — View Booking Confirmation for the selected booking.
 6c. UC-12 does not redefine confirmation-detail behavior.
 
-AF-2: No trips are available
+AF-2: Review a cancelled trip summary
+6a. The authenticated user reviews a trip whose booking status is CANCELLED.
+6b. Tripma keeps the user in the My Trips collection and presents the cancellation status carried by the summary.
+6c. UC-12 does not invoke UC-06 for that cancelled booking.
+
+AF-3: No trips are available
 4a. API-MY-TRIPS-LIST returns an empty trip collection.
 4b. Tripma presents the empty Your Trips experience.
 
@@ -119,15 +124,18 @@ class Booking <<Entity>> {
   createdAt: DateTime [1]
 }
 
+class City <<Entity>> {
+  id: UUID [1]
+  name: String [1]
+}
+
 class Flight <<Entity>> {
   id: UUID [1]
-  fromCity: String [1]
-  toCity: String [1]
+  originCityId: UUID [1]
+  destinationCityId: UUID [1]
   airlineName: String [1]
-  duration: String [1]
   stopsNumber: Integer [1]
-  fromToTime: String [1]
-  date: DateTime [1]
+  departureAt: DateTime [1]
   arrivalAt: DateTime [1]
 }
 
@@ -180,6 +188,8 @@ class MyTripsService <<Service>> {
 User "0..1" -- "0..*" Booking : owns
 Booking "0..*" -- "1" Flight : departing flight
 Booking "0..*" -- "0..1" Flight : returning flight
+City "1" -- "0..*" Flight : origin
+City "1" -- "0..*" Flight : destination
 Booking "1" -- "1..*" PassengerInfo : contains
 
 MyTripSummaryDto "1" *-- "1" MyTripFlightDto : departing flight

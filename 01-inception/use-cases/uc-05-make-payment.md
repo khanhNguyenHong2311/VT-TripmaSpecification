@@ -63,7 +63,8 @@ POST-3: When checkout cannot be completed, Tripma keeps the visitor in the payme
 11. The booking service completes the booking operation.
 12. API-BOOKING-CREATE returns the booking-confirmation response.
 13. Tripma makes the confirmation context available to the current workflow.
-14. Tripma opens the booking-success experience.
+14. If an authenticated save-card intent was recorded, Tripma invokes UC-13 — Save Payment Method with the completed booking reference.
+15. Tripma opens the booking-success experience.
 
 ### Alternative Flow
 
@@ -79,9 +80,9 @@ AF-2: Create an account during checkout
 3e. The Basic Flow resumes at step 3.
 
 AF-3: Save the payment method
-3f. The visitor chooses the saved-payment option exposed by the payment experience.
-3g. Tripma invokes UC-13 — Save Payment Method at the applicable checkout point.
-3h. When that use case succeeds, UC-05 resumes without redefining its internal behavior.
+3f. The authenticated visitor chooses the save-card option exposed by the payment experience.
+3g. Tripma records the save-card intent without creating a saved payment method yet.
+3h. The Basic Flow resumes at step 3; UC-13 is invoked only after step 12 has returned a completed booking reference.
 
 AF-4: Use another payment path
 3a. The visitor chooses another payment path offered by Tripma.
@@ -115,6 +116,10 @@ EF-5: Booking operation fails
 
 EF-6: Request cannot be completed
 8a. If Tripma cannot complete the request because of a technical failure, it preserves the checkout form and presents a retryable error state.
+
+EF-7: Payment method cannot be saved
+14a. If UC-13 cannot save the reusable payment method after booking completion, Tripma reports that outcome without reversing the completed booking or payment.
+14b. The Basic Flow resumes at step 15.
 
 ### Related UI
 
@@ -247,7 +252,7 @@ class PaymentInfo <<Entity>> {
   paymentMethod: PaymentMethod [1]
   status: PaymentStatus [1]
   providerTransactionId: String [1]
-  paymentToken: String [0..1]
+  paymentTokenEncrypted: Binary [0..1]
   nameOnCard: String [0..1]
   cardLastFour: String [0..1]
   expireDate: Date [0..1]

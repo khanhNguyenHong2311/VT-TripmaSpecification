@@ -31,17 +31,23 @@ POST
 
 ### Description
 
-Creates a cancellation for an eligible account-owned Tripma booking.
+Creates a cancellation for an eligible accessible Tripma booking.
 
 ### Authentication
 
-Required session
+Optional session
 
 ### Authorization
 
 Governed by UC-14.
 
 ## Request Header(s)
+
+### headers.Content-Type
+
+Type: string; Format: MIME type
+Required: No
+Nullable: No
 
 ### headers.Accept
 
@@ -69,7 +75,11 @@ None
 
 ## Request Body
 
-None
+### confirmationCode
+
+Type: string
+Required: No
+Nullable: No
 
 ## Success Response — HTTP 201
 
@@ -140,14 +150,6 @@ Required: Yes
 Nullable: No
 
 ## Error Response — HTTP 400
-
-### message
-
-Type: string
-Required: Yes
-Nullable: No
-
-## Error Response — HTTP 401
 
 ### message
 

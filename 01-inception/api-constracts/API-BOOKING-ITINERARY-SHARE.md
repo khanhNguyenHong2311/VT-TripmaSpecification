@@ -27,7 +27,7 @@ POST
 
 ### Path
 
-/api/bookings/[bookingId]/share
+/api/bookings/{bookingId}/share
 
 ### Description
 
@@ -41,10 +41,6 @@ Optional session
 
 Governed by UC-09.
 
-### Example Isolation
-
-Each example below is an independent Tripma field sample. Examples from different fields must not be combined to infer business behavior; applicable behavior is defined only by UC-09's UML Model and Business Rules.
-
 ## Request Header(s)
 
 ### headers.Content-Type
@@ -54,9 +50,6 @@ Required: Yes
 Nullable: No
 Default: application/json
 Allowed values: application/json
-Trigger: API-BOOKING-ITINERARY-SHARE request.
-Description: Media type of the submitted Tripma request body.
-Example: application/json
 
 ### headers.Accept
 
@@ -65,18 +58,12 @@ Required: No
 Nullable: No
 Default: application/json
 Allowed values: application/json
-Trigger: API-BOOKING-ITINERARY-SHARE request.
-Description: Response media type requested by the Tripma client.
-Example: application/json
 
 ### headers.X-Confirmation-Code
 
 Type: string
 Required: No
 Nullable: No
-Trigger: API-BOOKING-ITINERARY-SHARE request when the field is supplied.
-Description: Confirmation reference carried by the Tripma client.
-Example: "7f42b38ac912"
 
 ## Path Parameter(s)
 
@@ -85,9 +72,6 @@ Example: "7f42b38ac912"
 Type: string; Format: UUID
 Required: Yes
 Nullable: No
-Trigger: API-BOOKING-ITINERARY-SHARE request.
-Description: Booking reference carried by the request path.
-Example: "c397ec31-2be4-43dd-a006-3cc870ada565"
 
 ## Query Parameter(s)
 
@@ -100,18 +84,12 @@ None
 Type: array
 Required: Yes
 Nullable: No
-Trigger: API-BOOKING-ITINERARY-SHARE request body.
-Description: Recipient-email collection carried by the request.
-Example: []
 
 ### recipientEmails[]
 
 Type: string; Format: email
 Required: Yes
 Nullable: No
-Trigger: Recipient-email collection item.
-Description: Recipient-email value carried by the item.
-Example: "travel-companion@example.com"
 
 ## Success Response — HTTP 200
 
@@ -120,63 +98,42 @@ Example: "travel-companion@example.com"
 Type: boolean
 Required: Yes
 Nullable: No
-Trigger: API-BOOKING-ITINERARY-SHARE response.
-Description: Tripma response-status value.
-Example: true
 
 ### message
 
 Type: string
 Required: Yes
 Nullable: No
-Trigger: API-BOOKING-ITINERARY-SHARE response.
-Description: Human-readable Tripma response detail.
-Example: "Itinerary sharing completed"
 
 ### data
 
 Type: object
 Required: Yes
 Nullable: No
-Trigger: Successful API-BOOKING-ITINERARY-SHARE response.
-Description: Tripma itinerary-sharing result object.
-Example: {}
 
 ### data.bookingId
 
 Type: string; Format: UUID
 Required: Yes
 Nullable: No
-Trigger: Itinerary-sharing result returned by the API.
-Description: Booking reference carried by the result.
-Example: "c397ec31-2be4-43dd-a006-3cc870ada565"
 
 ### data.deliveries
 
 Type: array
 Required: Yes
 Nullable: No
-Trigger: Itinerary-sharing result returned by the API.
-Description: Itinerary-delivery result collection.
-Example: []
 
 ### data.deliveries[].shareId
 
 Type: string; Format: UUID
 Required: Yes
 Nullable: No
-Trigger: Itinerary-delivery result item.
-Description: Sharing-record reference carried by the item.
-Example: "ea370bce-2a28-4b57-8397-752df57921ab"
 
 ### data.deliveries[].recipientEmail
 
 Type: string; Format: email
 Required: Yes
 Nullable: No
-Trigger: Itinerary-delivery result item.
-Description: Recipient-email value carried by the item.
-Example: "travel-companion@example.com"
 
 ### data.deliveries[].deliveryStatus
 
@@ -184,18 +141,12 @@ Type: string; Format: enum
 Required: Yes
 Nullable: No
 Allowed values: SENT, FAILED
-Trigger: Itinerary-delivery result item.
-Description: Delivery-status value carried by the item.
-Example: "SENT"
 
 ### data.deliveries[].sentAt
 
 Type: string; Format: ISO 8601
 Required: No
 Nullable: Yes
-Trigger: Itinerary-delivery result item when the field is supplied.
-Description: Delivery timestamp carried by the item.
-Example: "2027-09-14T08:25:41Z"
 
 ## Error Response — HTTP 400
 
@@ -204,36 +155,24 @@ Example: "2027-09-14T08:25:41Z"
 Type: string
 Required: Yes
 Nullable: No
-Trigger: API-BOOKING-ITINERARY-SHARE rejects the submitted request.
-Description: Tripma itinerary-sharing request detail.
-Example: "Sharing information requires attention"
 
 ### issues
 
 Type: array
 Required: No
 Nullable: No
-Trigger: API-BOOKING-ITINERARY-SHARE error response when the field is supplied.
-Description: Tripma sharing-issue collection.
-Example: []
 
 ### issues[].field
 
 Type: string
 Required: Yes
 Nullable: No
-Trigger: Sharing-issue item returned by the API.
-Description: Request-field reference carried by the item.
-Example: "recipientEmails"
 
 ### issues[].code
 
 Type: string
 Required: Yes
 Nullable: No
-Trigger: Sharing-issue item returned by the API.
-Description: Machine-readable issue value carried by the item.
-Example: "SHARE_INPUT"
 
 ## Error Response — HTTP 403
 
@@ -242,9 +181,6 @@ Example: "SHARE_INPUT"
 Type: string
 Required: Yes
 Nullable: No
-Trigger: API-BOOKING-ITINERARY-SHARE returns an access outcome.
-Description: Tripma access-response detail.
-Example: "The itinerary is unavailable"
 
 ## Error Response — HTTP 404
 
@@ -253,9 +189,6 @@ Example: "The itinerary is unavailable"
 Type: string
 Required: Yes
 Nullable: No
-Trigger: API-BOOKING-ITINERARY-SHARE cannot resolve the submitted reference.
-Description: Tripma not-found response detail.
-Example: "The booking was not found"
 
 ## Error Response — HTTP 502
 
@@ -264,36 +197,24 @@ Example: "The booking was not found"
 Type: string
 Required: Yes
 Nullable: No
-Trigger: API-BOOKING-ITINERARY-SHARE cannot complete an external delivery.
-Description: Tripma itinerary-delivery response detail.
-Example: "Tripma could not deliver the itinerary"
 
 ### data
 
 Type: object
 Required: No
 Nullable: No
-Trigger: Delivery-error response when the field is supplied.
-Description: Tripma itinerary-delivery result object.
-Example: {}
 
 ### data.bookingId
 
 Type: string; Format: UUID
 Required: Yes
 Nullable: No
-Trigger: Delivery-error result returned by the API.
-Description: Booking reference carried by the result.
-Example: "c397ec31-2be4-43dd-a006-3cc870ada565"
 
 ### data.deliveries
 
 Type: array
 Required: Yes
 Nullable: No
-Trigger: Delivery-error result returned by the API.
-Description: Itinerary-delivery result collection.
-Example: []
 
 ## Error Response — HTTP 500
 
@@ -302,18 +223,12 @@ Example: []
 Type: string
 Required: Yes
 Nullable: No
-Trigger: API-BOOKING-ITINERARY-SHARE cannot complete because of a technical failure.
-Description: Generic Tripma service-error detail.
-Example: "Tripma could not complete itinerary sharing"
 
 ### retryable
 
 Type: boolean
 Required: Yes
 Nullable: No
-Trigger: API-BOOKING-ITINERARY-SHARE service-error response.
-Description: Retry-indicator value carried by the response.
-Example: true
 
 ## Notes
 

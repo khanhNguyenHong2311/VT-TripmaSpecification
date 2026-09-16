@@ -1,25 +1,25 @@
 ---
 artifact_type: api-contract
 status: Draft
-api_id: API-FLIGHT-DEALS-LIST
-related_uc_id: UC-10
+api_id: API-CUSTOMER-REVIEWS-LIST
+related_uc_id: UC-16
 ---
 
-# API-FLIGHT-DEALS-LIST: List Flight Deals
+# API-CUSTOMER-REVIEWS-LIST: List Customer Reviews
 
 ## General Information
 
 ### API ID
 
-API-FLIGHT-DEALS-LIST
+API-CUSTOMER-REVIEWS-LIST
 
 ### API Name
 
-List Flight Deals
+List Customer Reviews
 
 ### Related Use Case IDs
 
-UC-10
+UC-16
 
 ### Method
 
@@ -27,11 +27,11 @@ GET
 
 ### Path
 
-/api/flight-deals
+/api/comments
 
 ### Description
 
-Provides the Tripma flight-deal collection.
+Provides the public Tripma customer-review collection.
 
 ### Authentication
 
@@ -48,8 +48,6 @@ None
 Type: string; Format: MIME type
 Required: No
 Nullable: No
-Default: application/json
-Allowed values: application/json
 
 ## Path Parameter(s)
 
@@ -57,7 +55,17 @@ None
 
 ## Query Parameter(s)
 
-None
+### cursor
+
+Type: string
+Required: No
+Nullable: No
+
+### limit
+
+Type: integer
+Required: No
+Nullable: No
 
 ## Request Body
 
@@ -79,47 +87,67 @@ Nullable: No
 
 ### data
 
+Type: object
+Required: Yes
+Nullable: No
+
+### data.items
+
 Type: array
 Required: Yes
 Nullable: No
 
-### data[].id
+### data.items[]
+
+Type: object
+Required: Yes
+Nullable: No
+
+### data.items[].reviewId
 
 Type: string; Format: UUID
 Required: Yes
 Nullable: No
 
-### data[].placeName
+### data.items[].reviewerDisplayName
 
 Type: string
 Required: Yes
 Nullable: No
 
-### data[].city
+### data.items[].reviewerImagePath
 
 Type: string
 Required: Yes
 Nullable: No
 
-### data[].imagePath
+### data.items[].rating
+
+Type: integer
+Required: Yes
+Nullable: No
+
+### data.items[].content
 
 Type: string
 Required: Yes
 Nullable: No
 
-### data[].price
+### data.items[].reviewedAt
 
-Type: number
+Type: string; Format: ISO 8601
 Required: Yes
 Nullable: No
 
-### data[].currency
+### data.nextCursor
 
-Type: string; Format: ISO 4217 currency code
-Required: Yes
-Nullable: No
+Type: string
+Required: No
+Nullable: Yes
 
-### data[].description
+## Error Response — HTTP 400
+
+### message
 
 Type: string
 Required: Yes
@@ -141,4 +169,4 @@ Nullable: No
 
 ## Notes
 
-This contract completes the existing `/api/flight-deals` route with the normalized Tripma response envelope used by the target specifications.
+This contract normalizes the existing Tripma `/api/comments` route as a paginated public review response. Its behavior is defined by UC-16.
