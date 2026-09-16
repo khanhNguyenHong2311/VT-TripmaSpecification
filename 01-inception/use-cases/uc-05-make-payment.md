@@ -80,7 +80,7 @@ AF-2: Create an account during checkout
 
 AF-3: Save the payment method
 3f. The visitor chooses the saved-payment option exposed by the payment experience.
-3g. Tripma invokes the separate Save Payment Method use case at the applicable checkout point.
+3g. Tripma invokes UC-13 — Save Payment Method at the applicable checkout point.
 3h. When that use case succeeds, UC-05 resumes without redefining its internal behavior.
 
 AF-4: Use another payment path
@@ -122,11 +122,11 @@ Tripma payment experience in the booking workflow
 
 ### Related API IDs
 
-API-BOOKING-CREATE; API-AUTH-SIGNUP through UC-07; API-AUTH-SIGNIN through UC-08
+API-BOOKING-CREATE; API-AUTH-SIGNUP through UC-07; API-AUTH-SIGNIN through UC-08; API-PAYMENT-METHOD-SAVE through UC-13
 
 ### Notes
 
-Scope clarification: This use case covers payment authorization and booking completion. UC-07, UC-08, and the separate Save Payment Method use case are referenced only as supporting use cases.
+Scope clarification: This use case covers payment authorization and booking completion. UC-07, UC-08, and UC-13 are referenced only as supporting use cases.
 
 ## UML Model
 

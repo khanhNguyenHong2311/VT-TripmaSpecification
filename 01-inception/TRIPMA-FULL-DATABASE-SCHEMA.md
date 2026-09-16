@@ -1,4 +1,4 @@
-# Tripma Full Database Schema — UC-01 to UC-12
+# Tripma Full Database Schema — UC-01 to UC-13
 
 ```dbml
 Enum seat_class {
@@ -224,6 +224,26 @@ Table payment_infos {
 
 }
 
+Table saved_payment_methods {
+  id char(36) [pk, not null]
+  user_id char(36) [not null]
+  source_payment_info_id char(36) [not null, unique]
+  payment_method payment_method [not null]
+  provider_instrument_ref_encrypted varbinary(1024) [not null]
+  name_on_card varchar(150) [not null]
+  card_last_four char(4) [not null]
+  expire_date date [not null]
+  is_default boolean [not null, default: false]
+  idempotency_key varchar(128) [not null]
+  created_at datetime(3) [not null]
+  updated_at datetime(3) [not null]
+
+  indexes {
+    (user_id, idempotency_key) [unique, name: 'uq_saved_payment_methods_user_idempotency']
+    (user_id, created_at) [name: 'idx_saved_payment_methods_user_created_at']
+  }
+}
+
 Table share_itineraries {
   id char(36) [pk, not null]
   booking_id char(36) [not null]
@@ -294,6 +314,8 @@ Ref fk_seat_assignments_passenger: seat_assignments.passenger_info_id > passenge
 Ref fk_seat_assignments_flight: seat_assignments.flight_id > flights.id
 Ref fk_seat_assignments_seat: seat_assignments.seat_id > seats.id
 Ref fk_payment_infos_booking: payment_infos.booking_id > bookings.id
+Ref fk_saved_payment_methods_user: saved_payment_methods.user_id > users.id
+Ref fk_saved_payment_methods_source_payment: saved_payment_methods.source_payment_info_id > payment_infos.id
 Ref fk_share_itineraries_booking: share_itineraries.booking_id > bookings.id
 Ref fk_flight_deals_destination_city: flight_deals.destination_city_id > cities.id
 Ref fk_unique_places_destination_city: unique_places.destination_city_id > cities.id
