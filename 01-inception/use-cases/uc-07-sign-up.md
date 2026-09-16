@@ -78,12 +78,7 @@ AF-3: Decline optional deal alerts
 4a. The visitor leaves the optional deal-alert selection disabled.
 4b. The Basic Flow resumes at step 5.
 
-AF-4: Use a provider-based sign-up path
-2a. The visitor chooses an available provider action.
-2b. Tripma invokes the separate provider-authentication use case.
-2c. UC-07 does not redefine the provider's authentication behavior.
-
-AF-5: Close the sign-up form
+AF-4: Close the sign-up form
 4a. The visitor closes the modal before submitting.
 4b. Tripma discards the unsubmitted interaction and returns to the calling experience.
 
@@ -105,11 +100,11 @@ EF-4: Request cannot be completed
 
 ### Related UI
 
-Navbar Sign up action; authentication modal in Sign Up mode; email input; password input; terms selection; deal-alert selection; Create account action; provider buttons; account-creation entry point in the UC-05 payment experience
+Navbar sign-up entry; Tripma email-and-password registration experience; account-creation entry point in the UC-05 payment experience
 
 ### Related API IDs
 
-API-AUTH-SIGNUP; provider authentication is handled by its separate use case
+API-AUTH-SIGNUP
 
 ### Notes
 
@@ -128,7 +123,6 @@ class User <<Entity>> {
   receiveDealAlerts: Boolean [1]
   termsAcceptedAt: DateTime [1]
   createdAt: DateTime [1]
-  updatedAt: DateTime [1]
 }
 
 class SignUpDto <<DTO>> {

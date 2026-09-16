@@ -331,16 +331,11 @@ end note
 
 note bottom of PreparedPassengerContextDto
   This is a transient booking-workflow context.
-  API-PASSENGER-INFO-PREPARE does not persist
-  the entity classes shown in this model.
+  API-PASSENGER-INFO-PREPARE does not persist it.
 end note
 
 note bottom of Booking
-  The entity classes describe the target persistence
-  vocabulary used by the later booking-creation use case.
-  Physical table names, column names, database types,
-  constraints, and migrations require the separate
-  DATABASE-SCHEMA.md approval workflow.
+  Persistence occurs later in UC-05.
 end note
 
 @enduml

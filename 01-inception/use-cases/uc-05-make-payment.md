@@ -162,20 +162,10 @@ class User <<Entity>> {
 
 class Flight <<Entity>> {
   id: UUID [1]
-  fromCity: String [1]
-  toCity: String [1]
-  imgPath: String [1]
   subtotalPrice: Decimal [1]
   taxesAndFees: Decimal [1]
-  baggageFees: Decimal [1]
+  baggageFeePerBag: Decimal [1]
   currency: String [1]
-  airlineName: String [1]
-  duration: String [1]
-  stopsNumber: Integer [1]
-  stopsInfo: String [0..1]
-  fromToTime: String [1]
-  date: DateTime [1]
-  arrivalAt: DateTime [1]
 }
 
 class Seat <<Entity>> {
@@ -208,15 +198,6 @@ class PassengerInfo <<Entity>> {
   id: UUID [1]
   bookingId: UUID [1]
   passengerType: PassengerType [1]
-  firstName: String [1]
-  middleName: String [0..1]
-  lastName: String [1]
-  suffix: String [0..1]
-  dateOfBirth: Date [1]
-  email: String [0..1]
-  phone: String [0..1]
-  redressNumber: String [0..1]
-  knownTravelerNumber: String [0..1]
 }
 
 enum PassengerType {
@@ -227,10 +208,6 @@ enum PassengerType {
 class EmergencyContact <<Entity>> {
   id: UUID [1]
   bookingId: UUID [1]
-  firstName: String [1]
-  lastName: String [1]
-  email: String [1]
-  phone: String [1]
 }
 
 class PassengerBaggage <<Entity>> {

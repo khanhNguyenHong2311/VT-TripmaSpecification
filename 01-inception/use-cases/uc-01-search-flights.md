@@ -120,7 +120,6 @@ class Flight <<Entity>> {
   imgPath: String [1]
   subtotalPrice: Decimal [1]
   taxesAndFees: Decimal [1]
-  baggageFees: Decimal [1]
   currency: String [1]
   airlineName: String [1]
   duration: String [1]
@@ -135,10 +134,7 @@ class Seat <<Entity>> {
   id: UUID [1]
   flightId: UUID [1]
   seatClass: SeatClass [1]
-  seatNumber: String [1]
   available: Boolean [1]
-  price: Decimal [1]
-  currency: String [1]
 }
 
 enum SeatClass {

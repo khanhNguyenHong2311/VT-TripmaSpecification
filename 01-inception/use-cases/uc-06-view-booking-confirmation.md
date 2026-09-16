@@ -87,7 +87,7 @@ API-BOOKING-CONFIRMATION-GET
 
 ### Notes
 
-Scope clarification: This use case only retrieves and presents the confirmation of an existing Tripma booking.
+Scope clarification: This use case only retrieves and presents the confirmation of an existing Tripma booking. Itinerary sharing is assigned to UC-09, and opening an account trip collection is assigned to UC-12.
 
 ## UML Model
 
@@ -153,15 +153,12 @@ class PassengerBaggage <<Entity>> {
   passengerInfoId: UUID [1]
   flightId: UUID [1]
   checkedBags: Integer [1]
-  fee: Decimal [1]
-  currency: String [1]
 }
 
 class SeatAssignment <<Entity>> {
   id: UUID [1]
   passengerInfoId: UUID [1]
   flightId: UUID [1]
-  seatId: UUID [1]
   seatNumber: String [1]
   seatClass: SeatClass [1]
 }
@@ -179,8 +176,6 @@ class PaymentInfo <<Entity>> {
   nameOnCard: String [0..1]
   cardLastFour: String [0..1]
   expireDate: Date [0..1]
-  amount: Decimal [1]
-  currency: String [1]
 }
 
 class ConfirmationAccessDto <<DTO>> {
